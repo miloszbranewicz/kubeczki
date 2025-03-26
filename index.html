@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Układów Kubeczków</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Generator Układów Kubeczków</h1>
+            <div class="controls">
+                <div class="grid-size-control">
+                    <label for="grid-size">Rozmiar siatki:</label>
+                    <select id="grid-size">
+                        <option value="10">10x10</option>
+                        <option value="12">12x12</option>
+                        <option value="14">14x14</option>
+                        <option value="16">16x16</option>
+                        <option value="18">18x18</option>
+                        <option value="20">20x20</option>
+                    </select>
+                </div>
+                <div class="cup-controls">
+                    <button id="toggle-orientation">Zmień orientację kubka</button>
+                    <button id="delete-cup">Usuń wybrany kubek</button>
+                    <button id="clear-board">Wyczyść planszę</button>
+                </div>
+                <button id="export-pdf">Eksportuj do PDF</button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="canvas-container">
+                <canvas id="cup-canvas"></canvas>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Kliknij na siatkę, aby umieścić kubek. Kliknij prawym przyciskiem myszy na kubek, aby go wybrać do edycji lub usunięcia. Kliknij ponownie prawym przyciskiem, aby odznaczyć.</p>
+            <p>Zielone podświetlenie oznacza poprawne miejsce, czerwone oznacza niepoprawne miejsce.</p>
+            <p>Zasady fizyki: Kubek umieszczony bezpośrednio na innym kubku musi mieć przeciwną orientację.</p>
+        </footer>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
