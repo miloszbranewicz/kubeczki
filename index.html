@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Piramid z Kubeczków</title>
+    <title>Generator Konstrukcji z Kubeczków</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,7 +11,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Generator Piramid z Kubeczków</h1>
+        <h1>Generator Konstrukcji z Kubeczków</h1>
         
         <div class="controls">
             <div class="size-selector">
@@ -43,18 +43,32 @@
         
         <div class="instructions">
             <h3>Instrukcja:</h3>
+            <ol>
+                <li>Wybierz rozmiar siatki z rozwijanej listy.</li>
+                <li>Kliknij na kolor kubeczka, który chcesz użyć.</li>
+                <li>Kliknij na siatkę, aby umieścić kubeczek.</li>
+                <li>Kliknij prawym przyciskiem myszy na kubeczek, aby go usunąć.</li>
+                <li>Użyj przycisku "Eksportuj do PDF", aby zapisać swoją konstrukcję.</li>
+            </ol>
+            <p>W aplikacji możesz budować różne typy konstrukcji:</p>
             <ul>
-                <li>Wybierz kolor kubeczka z paska narzędzi</li>
-                <li>Kliknij na siatkę, aby umieścić kubeczek</li>
-                <li>Zacznij budowę piramidy od <strong>dolnej warstwy</strong> (podstawy) i układaj kubeczki ku górze</li>
-                <li>Kubeczki muszą być ustawiane zgodnie z zasadami fizyki (np. kubeczek wyższej warstwy musi być podparty przez dwa kubeczki niższej warstwy)</li>
-                <li>Kliknij prawym przyciskiem myszy, aby usunąć kubeczek</li>
-                <li>Użyj przycisku "Eksportuj do PDF", aby zapisać projekt</li>
+                <li><strong>Piramidy:</strong> kliknij między dwoma kubeczkami, aby umieścić kubeczek na środku nad nimi.</li>
+                <li><strong>Stosy:</strong> kliknij nad kubeczkiem, aby postawić na nim kolejny kubeczek.</li>
+                <li><strong>Dowolne konstrukcje:</strong> kliknij w pustym miejscu, aby rozpocząć nową konstrukcję.</li>
             </ul>
+            <p>Dodatkowe funkcje:</p>
+            <ul>
+                <li><strong>Wyrównanie do siatki:</strong> wszystkie kubeczki są automatycznie przyciągane do punktów siatki, zapewniając idealnie równe rozmieszczenie.</li>
+                <li><strong>Inteligentne wykrywanie:</strong> aplikacja automatycznie rozpoznaje zamierzony typ konstrukcji i odpowiednio dostosowuje położenie kubeczków.</li>
+                <li><strong>Zaawansowana analiza wzorców:</strong> system analizuje istniejące wzorce i kontekst, aby lepiej rozpoznać zamierzony typ konstrukcji (piramida, stos lub zwykłe umieszczenie).</li>
+                <li><strong>Adaptacyjne zachowanie:</strong> aplikacja dostosowuje położenie nowych kubeczków do istniejących wzorców konstrukcji, ułatwiając tworzenie spójnych struktur.</li>
+            </ul>
+            <p><small>Funkcje testowe dostępne w konsoli: testPyramid(), testRectangle(), testRectangleWithGap()</small></p>
         </div>
     </div>
 
     <script src="js/app.js"></script>
+    <script src="js/test.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if all dependencies are loaded

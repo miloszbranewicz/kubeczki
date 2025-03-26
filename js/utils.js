@@ -54,12 +54,18 @@ function checkDependencies() {
  * @returns {number} - Calculated cell size
  */
 function calculateCellSize(containerWidth, gridSize) {
-    // Calculate cell size based on container width and grid size
-    // Add some padding
-    const padding = 40;
+    // Oblicz maksymalny możliwy rozmiar komórki, aby cała siatka zmieściła się w kontenerze
+    // Odejmujemy małe padding, aby zapewnić margines bezpieczeństwa
+    const padding = 2; // Zmniejszony padding, aby maksymalnie wykorzystać dostępną przestrzeń
     const availableWidth = containerWidth - padding;
     
-    return Math.floor(availableWidth / gridSize);
+    // Podziel dostępną szerokość przez liczbę komórek w siatce
+    let cellSize = Math.floor(availableWidth / gridSize);
+    
+    // Upewnij się, że komórki nie są zbyt małe (minimum 20px)
+    cellSize = Math.max(cellSize, 20);
+    
+    return cellSize;
 }
 
 /**
