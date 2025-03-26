@@ -3,47 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Układów Kubeczków</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Generator Piramid z Kubeczków</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/utils.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>Generator Układów Kubeczków</h1>
-            <div class="controls">
-                <div class="grid-size-control">
-                    <label for="grid-size">Rozmiar siatki:</label>
-                    <select id="grid-size">
-                        <option value="10">10x10</option>
-                        <option value="12">12x12</option>
-                        <option value="14">14x14</option>
-                        <option value="16">16x16</option>
-                        <option value="18">18x18</option>
-                        <option value="20">20x20</option>
-                    </select>
-                </div>
-                <div class="cup-controls">
-                    <button id="toggle-orientation">Zmień orientację kubka</button>
-                    <button id="delete-cup">Usuń wybrany kubek</button>
-                    <button id="clear-board">Wyczyść planszę</button>
-                </div>
-                <button id="export-pdf">Eksportuj do PDF</button>
-            </div>
-        </header>
+    <div class="container">
+        <h1>Generator Piramid z Kubeczków</h1>
         
-        <main>
-            <div class="canvas-container">
-                <canvas id="cup-canvas"></canvas>
+        <div class="controls">
+            <div class="size-selector">
+                <label for="grid-size">Rozmiar siatki:</label>
+                <select id="grid-size">
+                    <option value="10">10x10</option>
+                    <option value="12">12x12</option>
+                    <option value="14">14x14</option>
+                    <option value="16">16x16</option>
+                    <option value="18">18x18</option>
+                    <option value="20">20x20</option>
+                </select>
             </div>
-        </main>
+            
+            <div class="actions">
+                <button id="clear-btn">Wyczyść</button>
+                <button id="export-btn">Eksportuj do PDF</button>
+            </div>
+        </div>
+
+        <div class="cups-toolbar">
+            <h3>Wybierz kubeczek:</h3>
+            <div id="cups-selection"></div>
+        </div>
         
-        <footer>
-            <p>Kliknij na siatkę, aby umieścić kubek. Kliknij prawym przyciskiem myszy na kubek, aby go wybrać do edycji lub usunięcia. Kliknij ponownie prawym przyciskiem, aby odznaczyć.</p>
-            <p>Zielone podświetlenie oznacza poprawne miejsce, czerwone oznacza niepoprawne miejsce.</p>
-            <p>Zasady fizyki: Kubek umieszczony bezpośrednio na innym kubku musi mieć przeciwną orientację.</p>
-        </footer>
+        <div id="canvas-container">
+            <div id="canvas"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Instrukcja:</h3>
+            <ul>
+                <li>Wybierz kolor kubeczka z paska narzędzi</li>
+                <li>Kliknij na siatkę, aby umieścić kubeczek</li>
+                <li>Zacznij budowę piramidy od <strong>dolnej warstwy</strong> (podstawy) i układaj kubeczki ku górze</li>
+                <li>Kubeczki muszą być ustawiane zgodnie z zasadami fizyki (np. kubeczek wyższej warstwy musi być podparty przez dwa kubeczki niższej warstwy)</li>
+                <li>Kliknij prawym przyciskiem myszy, aby usunąć kubeczek</li>
+                <li>Użyj przycisku "Eksportuj do PDF", aby zapisać projekt</li>
+            </ul>
+        </div>
     </div>
-    
-    <script src="app.js"></script>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if all dependencies are loaded
+            window.pyramidUtils.checkDependencies();
+        });
+    </script>
 </body>
-</html>
+</html> 

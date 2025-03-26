@@ -1,51 +1,52 @@
-# Generator Układów Kubeczków
+# Generator Piramid z Kubeczków
 
-Aplikacja oparta na canvas pozwalająca użytkownikom tworzyć, edytować i eksportować układy kubeczków.
+Interaktywna aplikacja webowa do projektowania piramid z kubeczków. Aplikacja umożliwia użytkownikom tworzenie własnych projektów piramid, które można następnie eksportować do pliku PDF i odtworzyć fizycznie za pomocą kolorowych kubeczków.
 
 ## Funkcje
 
-- Tworzenie układów kubeczków na siatkach o różnych rozmiarach (10x10, 12x12, 14x14, 16x16, 18x18, 20x20)
-- Umieszczanie kubeczków w pozycji normalnej lub odwróconej
-- Edycja pozycji i orientacji kubeczków
-- Usuwanie kubeczków
-- Czyszczenie całej planszy jednym kliknięciem
-- Wizualne informacje zwrotne z kolorowym podświetleniem pozycji
-- Wybór i odznaczanie kubeczków prawym przyciskiem myszy
-- Eksport układów do PDF (wkrótce)
-- Ograniczenia fizyczne zapewniające, że układy są fizycznie możliwe do zbudowania
+- Projektowanie piramid z kubeczków w różnych rozmiarach siatki (10x10, 12x12, 14x14, 16x16, 18x18, 20x20)
+- Wybór z 11 kolorów kubeczków
+- Interaktywne umieszczanie kubeczków zgodnie z zasadami fizyki
+- Eksport projektu do pliku PDF
+- Intuicyjny interfejs użytkownika w języku polskim
 
-## Instrukcja użytkowania
+## Technologie
 
-1. Wybierz rozmiar siatki z rozwijanego menu
-2. Kliknij na siatkę, aby umieścić kubek
-   - Kubki w dolnym rzędzie można umieszczać dowolnie
-   - Kubki w wyższych rzędach muszą przestrzegać zasad fizyki
-   - Zielone podświetlenia wskazują prawidłowe pozycje
-   - Czerwone podświetlenia wskazują nieprawidłowe pozycje
-3. Kliknij prawym przyciskiem myszy na kubek, aby go wybrać (kliknij ponownie prawym przyciskiem, aby odznaczyć)
-4. Użyj przycisku "Zmień orientację kubka", aby zmienić orientację kubka
-5. Użyj przycisku "Usuń wybrany kubek", aby usunąć wybrany kubek
-6. Użyj przycisku "Wyczyść planszę", aby usunąć wszystkie kubki
-7. Użyj przycisku "Eksportuj do PDF", aby wyeksportować swój układ (wkrótce)
+- HTML5
+- CSS3
+- JavaScript
+- [Konva.js](https://konvajs.org/) - do obsługi interaktywnego canvas
+- [jsPDF](https://github.com/parallax/jsPDF) - do generowania plików PDF
 
-## Ograniczenia fizyczne
+## Jak uruchomić
 
-Aplikacja wymusza następujące ograniczenia fizyczne:
-- Kubek umieszczony bezpośrednio na innym kubku musi mieć przeciwną orientację
-- Kubki nie mogą być umieszczane w powietrzu (muszą mieć podparcie z kubków poniżej)
-- Kubek w pozycji połówkowej musi mieć podparcie z kubków po obu stronach poniżej
-- Wspiera struktury piramidowe, gdzie wyższe warstwy mogą mieć mniej kubków niż niższe warstwy
-- Umożliwia tworzenie stabilnych układów, takich jak układy kubków 4-3-2-1
+1. Sklonuj to repozytorium na swój komputer
+2. Otwórz plik `index.html` w przeglądarce internetowej
+3. Alternatywnie, możesz użyć serwera lokalnego (np. Live Server w Visual Studio Code)
 
-## Rozwój
+## Instrukcja użycia
 
-Ta aplikacja wykorzystuje czysty JavaScript z HTML5 Canvas do renderowania. Nie wymaga zewnętrznych bibliotek.
+1. Wybierz rozmiar siatki z listy rozwijanej
+2. Wybierz kolor kubeczka z paska narzędzi
+3. Kliknij na siatkę, aby umieścić kubeczek
+4. Pamiętaj, że kubeczki muszą być ustawiane zgodnie z zasadami fizyki:
+   - Kubeczki w sąsiednich rzędach muszą być ustawiane na przemian
+   - Każdy kubeczek z wyższej warstwy musi być podparty przez dwa kubeczki niższej warstwy
+   - Kubeczki wyższej warstwy nie mogą być szersze niż warstwy poniżej
+5. Kliknij prawym przyciskiem myszy, aby usunąć kubeczek
+6. Użyj przycisku "Eksportuj do PDF", aby zapisać projekt
 
-### Przyszłe ulepszenia
+## Zasady fizycznego układania
 
-- Wsparcie dla różnych kolorów kubków
-- Możliwość zapisywania i wczytywania układów
-- Funkcja eksportu do PDF
-- Ulepszony wygląd
-- Interfejs przeciągnij i upuść
-- Funkcja cofnij/ponów 
+- Kubeczki w sąsiednich rzędach muszą być ustawiane na przemian (wzór szachownicy)
+- Każdy kubeczek z wyższej warstwy musi być odwrócony w stosunku do kubeczka poniżej
+- Piramida nie może się rozszerzać (kubeczki wyższej warstwy nie mogą być szersze niż warstwy poniżej)
+- Klasyczny wzór piramidy to np. 4-3-2-1, ale możesz tworzyć dowolne konfiguracje zgodne z regułami fizyki
+
+## Autor
+
+Generator Piramid z Kubeczków został stworzony zgodnie z wymaganiami określonymi w pliku `.req.md`.
+
+## Licencja
+
+Ten projekt jest udostępniany na licencji [MIT](https://opensource.org/licenses/MIT). 

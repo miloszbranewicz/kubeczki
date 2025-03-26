@@ -1,0 +1,169 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    padding: 20px;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
+
+.size-selector {
+    display: flex;
+    align-items: center;
+}
+
+.size-selector label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.size-selector select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.actions button {
+    padding: 8px 15px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.actions button:hover {
+    background-color: #2980b9;
+}
+
+.cups-toolbar {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
+
+.cups-toolbar h3 {
+    margin-bottom: 10px;
+}
+
+#cups-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cup-option {
+    width: 60px;
+    height: 60px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.cup-option:hover {
+    border-color: #3498db;
+}
+
+.cup-option.active {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.cup-option img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+#canvas-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+#canvas {
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.instructions {
+    padding: 15px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
+
+.instructions h3 {
+    margin-bottom: 10px;
+}
+
+.instructions ul {
+    padding-left: 20px;
+}
+
+.instructions li {
+    margin-bottom: 5px;
+}
+
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .actions {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .cups-toolbar {
+        overflow-x: auto;
+    }
+    
+    #cups-selection {
+        justify-content: flex-start;
+        min-width: max-content;
+    }
+} 
