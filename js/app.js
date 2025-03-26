@@ -109,21 +109,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const desiredCanvasSize = config.gridSize * desiredCellSize;
         
         // Oblicz najlepszy rozmiar canvas, nie przekraczając dostępnej szerokości
-        const newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
+        let newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
+        
+        // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
+        let cellSize = window.pyramidUtils.calculateCellSize(newCanvasSize, config.gridSize);
+        
+        // Oblicz odstęp siatki na podstawie szerokości kubeczka
+        config.gridSpacing = cellSize / 2;
+        
+        // Upewnij się, że canvas ma rozmiar, który jest wielokrotnością odstępu siatki
+        // dzięki temu grid będzie zawsze kończył się dokładnie na krawędzi canvas
+        const gridCellCount = Math.floor(newCanvasSize / config.gridSpacing);
+        newCanvasSize = gridCellCount * config.gridSpacing;
+        
+        // Zaktualizuj rozmiary
         config.stageWidth = newCanvasSize;
         config.stageHeight = newCanvasSize;
+        config.cupWidth = cellSize;
+        config.cupHeight = cellSize;
         
         // Aktualizuj rozmiar stage
         stage.width(config.stageWidth);
         stage.height(config.stageHeight);
-        
-        // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
-        const cellSize = window.pyramidUtils.calculateCellSize(config.stageWidth, config.gridSize);
-        config.cupWidth = cellSize;
-        config.cupHeight = cellSize;
-        
-        // Oblicz odstęp siatki na podstawie szerokości kubeczka
-        config.gridSpacing = cellSize / 2;
         
         // Redraw grid
         drawGrid();
@@ -153,8 +160,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Draw grid lines and points for better alignment
         if (config.showGrid) {
             const gridSpacing = config.gridSpacing;
-            const numLinesH = Math.floor(config.stageHeight / gridSpacing);
-            const numLinesV = Math.floor(config.stageWidth / gridSpacing);
+            
+            // Oblicz dokładną liczbę linii na podstawie rozmiaru canvas
+            // Zapewni to, że ostatnia linia będzie dokładnie na krawędzi canvas
+            const numLinesH = Math.round(config.stageHeight / gridSpacing);
+            const numLinesV = Math.round(config.stageWidth / gridSpacing);
             
             // Draw horizontal lines
             for (let i = 0; i <= numLinesH; i++) {
@@ -205,6 +215,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
+     * Sprawdza, czy nowy kubeczek nie nachodziłby na istniejące kubeczki
+     * @param {number} x - Pozycja X środka kubeczka
+     * @param {number} y - Pozycja Y środka kubeczka
+     * @returns {boolean} - true jeśli pozycja jest wolna, false jeśli kubeczki by się nakładały
+     */
+    function isPositionClear(x, y) {
+        // Minimalna dopuszczalna odległość między środkami kubeczków
+        const minDistanceSquared = Math.pow(config.cupWidth * 0.85, 2);
+        
+        // Sprawdź odległość od wszystkich istniejących kubeczków
+        return !config.cups.some(cup => {
+            const cupX = cup.cupImage.x() + config.cupWidth / 2;
+            const cupY = cup.cupImage.y() + config.cupHeight / 2;
+            
+            // Oblicz kwadrat odległości (szybsze niż z pierwiastkiem)
+            const distanceSquared = Math.pow(cupX - x, 2) + Math.pow(cupY - y, 2);
+            
+            // Jeśli kwadrat odległości jest mniejszy niż minimalny, kubeczki nachodziłyby na siebie
+            return distanceSquared < minDistanceSquared;
+        });
+    }
+    
+    /**
      * Znajduje kubeczki wspierające pod wskazaną pozycją (tryb piramidy)
      */
     function findSupportingCups(x, y) {
@@ -218,16 +251,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Kubeczki powinny być po lewej i prawej stronie od punktu kliknięcia
             // ale nie dalej niż szerokość kubeczka od punktu kliknięcia
-            const isWithinHorizontalRange = Math.abs(cupX - x) < config.cupWidth;
+            const isWithinHorizontalRange = Math.abs(cupX - x) < config.cupWidth * 1.2;
             
             return isCorrectVerticalDistance && isWithinHorizontalRange;
         });
         
+        // Jeśli mamy więcej niż dwa potencjalne kubeczki, wybierz dwa najbliższe
+        let finalSupportCups = potentialSupportCups;
+        if (potentialSupportCups.length > 2) {
+            // Sortuj według odległości od punktu kliknięcia w poziomie
+            finalSupportCups = potentialSupportCups.sort((a, b) => {
+                const aX = a.cupImage.x() + config.cupWidth / 2;
+                const bX = b.cupImage.x() + config.cupWidth / 2;
+                
+                const aDist = Math.abs(aX - x);
+                const bDist = Math.abs(bX - x);
+                
+                return aDist - bDist;
+            }).slice(0, 2);
+        }
+        
         // Jeśli mamy dokładnie dwa kubeczki potencjalnego wsparcia
-        if (potentialSupportCups.length === 2) {
+        if (finalSupportCups.length === 2) {
             // Sprawdź, czy kubeczki są odpowiednio rozmieszczone (jeden po lewej, drugi po prawej)
-            const cup1X = potentialSupportCups[0].cupImage.x() + config.cupWidth / 2;
-            const cup2X = potentialSupportCups[1].cupImage.x() + config.cupWidth / 2;
+            const cup1X = finalSupportCups[0].cupImage.x() + config.cupWidth / 2;
+            const cup2X = finalSupportCups[1].cupImage.x() + config.cupWidth / 2;
             
             // Oblicz odległość między kubeczkami w poziomie
             const horizontalDistance = Math.abs(cup1X - cup2X);
@@ -237,11 +285,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Sprawdź, czy odległość między kubeczkami jest odpowiednia dla piramidy
             // Typowa odległość to około szerokość kubeczka plus ewentualny odstęp
-            const isProperDistance = horizontalDistance >= config.cupWidth * 0.8 && 
-                                     horizontalDistance <= config.cupWidth * 2.5;
+            const isProperDistance = horizontalDistance >= config.cupWidth * 0.9 && 
+                                     horizontalDistance <= config.cupWidth * 2.2;
             
             if (isOnOppositeSides && isProperDistance) {
-                return potentialSupportCups;
+                // Dodatkowe sprawdzenie - oblicz dokładną pozycję kubeczka na środku
+                const centerX = (cup1X + cup2X) / 2;
+                const centerY = finalSupportCups[0].cupImage.y() + config.cupHeight / 2 - config.ROW_SPACING;
+                
+                // Sprawdź, czy w tej pozycji kubeczek nie nachodzi na inne
+                if (isPositionClear(centerX, centerY)) {
+                    return finalSupportCups;
+                }
             }
         }
         
@@ -258,11 +313,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (matchingPattern) {
-                return matchingPattern.supportCups;
+                // Sprawdź, czy w tej pozycji kubeczek nie nachodzi na inne
+                if (isPositionClear(matchingPattern.center.x, matchingPattern.center.y - config.ROW_SPACING)) {
+                    return matchingPattern.supportCups;
+                }
             }
         }
         
-        return potentialSupportCups.length === 2 ? potentialSupportCups : [];
+        return finalSupportCups.length === 2 ? finalSupportCups : [];
     }
     
     /**
@@ -314,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function findStackedCup(x, y) {
         // Szukaj kubeczka, który może być podstawą dla stosu
-        return config.cups.find(cup => {
+        const stackedCup = config.cups.find(cup => {
             const cupX = cup.cupImage.x() + config.cupWidth / 2;
             const cupY = cup.cupImage.y() + config.cupHeight / 2;
             
@@ -324,6 +382,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             return isDirectlyBelow && isAtStackingDistance;
         });
+        
+        if (stackedCup) {
+            // Oblicz dokładną pozycję kubeczka na stosie
+            const stackX = stackedCup.cupImage.x() + config.cupWidth / 2;
+            const stackY = stackedCup.cupImage.y() + config.cupHeight / 2 - config.STACK_SPACING;
+            
+            // Sprawdź, czy w tej pozycji kubeczek nie nachodzi na inne
+            if (isPositionClear(stackX, stackY)) {
+                return stackedCup;
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -368,13 +439,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     /**
      * Przyciąga pozycję do najbliższego punktu siatki
+     * z uwzględnieniem granic canvas
      */
     function snapToGrid(x, y) {
         const gridSpacing = config.gridSpacing;
+        const halfWidth = config.cupWidth / 2;
+        const halfHeight = config.cupHeight / 2;
         
         // Znajdź najbliższy punkt siatki
-        const snappedX = Math.round(x / gridSpacing) * gridSpacing;
-        const snappedY = Math.round(y / gridSpacing) * gridSpacing;
+        let snappedX = Math.round(x / gridSpacing) * gridSpacing;
+        let snappedY = Math.round(y / gridSpacing) * gridSpacing;
+        
+        // Upewnij się, że po przyciągnięciu do siatki kubeczek nie wyjdzie poza granice canvas
+        if (snappedX - halfWidth < 0) {
+            snappedX = halfWidth;
+        } else if (snappedX + halfWidth > config.stageWidth) {
+            snappedX = config.stageWidth - halfWidth;
+        }
+        
+        if (snappedY - halfHeight < 0) {
+            snappedY = halfHeight;
+        } else if (snappedY + halfHeight > config.stageHeight) {
+            snappedY = config.stageHeight - halfHeight;
+        }
+        
+        // Przyciągnij ponownie do najbliższego punktu siatki z uwzględnieniem ograniczeń
+        snappedX = Math.round(snappedX / gridSpacing) * gridSpacing;
+        snappedY = Math.round(snappedY / gridSpacing) * gridSpacing;
         
         return { x: snappedX, y: snappedY };
     }
@@ -423,6 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let finalX = x;
         let finalY = y;
         let cupDirection = 'down'; // Domyślnie kubeczek skierowany wierzchołkiem w dół
+        let placementType = 'basic'; // Typ umieszczenia: 'pyramid', 'stack', 'basic'
         
         // Analizuj otoczenie punktu kliknięcia, aby lepiej określić intencję
         const analysisResult = analyzeClickPosition(x, y);
@@ -437,6 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             finalX = (cup1X + cup2X) / 2;
             finalY = cup1Y - config.ROW_SPACING;
+            placementType = 'pyramid';
             
             // Określ kierunek kubeczka na podstawie istniejących wzorców piramid
             if (analysisResult.pyramidPatterns.length > 0) {
@@ -453,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Użyj przeciwnego kierunku niż kubeczek w najbliższym wzorcu
                     cupDirection = closestPattern.pattern.topCup.direction === 'up' ? 'down' : 'up';
                 } else {
-                    cupDirection = 'up'; // Domyślnie w piramidzie kubeczki są naprzemiennie
+                    cupDirection = 'up'; // Domyślnie w piramidzie co druga warstwa ma kubeczki w górę
                 }
             } else {
                 cupDirection = 'up'; // W piramidzie co druga warstwa ma kubeczki w górę
@@ -465,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (stackedCup) {
                 finalX = stackedCup.cupImage.x() + config.cupWidth / 2;
                 finalY = stackedCup.cupImage.y() + config.cupHeight / 2 - config.STACK_SPACING;
+                placementType = 'stack';
                 
                 // Kierunek kubeczka przeciwny do niższego kubeczka
                 cupDirection = stackedCup.direction === 'up' ? 'down' : 'up';
@@ -493,10 +587,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 const snapped = snapToGrid(finalX, finalY);
                 finalX = snapped.x;
                 finalY = snapped.y;
+                
+                // Sprawdź, czy w docelowej pozycji kubeczek nie nachodzi na inne
+                if (!isPositionClear(finalX, finalY)) {
+                    // Jeśli pozycja nie jest wolna, spróbuj znaleźć najbliższą wolną pozycję na siatce
+                    const freePosition = findNearestFreePosition(finalX, finalY);
+                    if (freePosition) {
+                        finalX = freePosition.x;
+                        finalY = freePosition.y;
+                    } else {
+                        // Jeśli nie ma wolnej pozycji w pobliżu, przerwij
+                        console.log("Nie można umieścić kubeczka - brak miejsca");
+                        return;
+                    }
+                }
             }
         }
         
-        // Sprawdź, czy nie ma już kubeczka w tej pozycji
+        // Sprawdź, czy kubeczek nie wyszedłby poza granice canvas
+        if (finalX - config.cupWidth / 2 < 0 || 
+            finalX + config.cupWidth / 2 > config.stageWidth || 
+            finalY - config.cupHeight / 2 < 0 || 
+            finalY + config.cupHeight / 2 > config.stageHeight) {
+            
+            console.log("Nie można umieścić kubeczka - wyszedłby poza granice płótna");
+            
+            // Opcjonalnie - dodaj wizualną informację dla użytkownika
+            const alertText = new Konva.Text({
+                x: Math.min(Math.max(finalX, 50), config.stageWidth - 100),
+                y: Math.min(Math.max(finalY, 50), config.stageHeight - 30),
+                text: 'Kubeczek wychodzi poza płótno!',
+                fontSize: 16,
+                fontFamily: 'Arial',
+                fill: 'red',
+            });
+            
+            gridLayer.add(alertText);
+            gridLayer.draw();
+            
+            // Usuń komunikat po 2 sekundach
+            setTimeout(() => {
+                alertText.destroy();
+                gridLayer.draw();
+            }, 2000);
+            
+            return;
+        }
+        
+        // Ostateczne sprawdzenie, czy pozycja jest wolna
+        if (!isPositionClear(finalX, finalY)) {
+            console.log("Nie można umieścić kubeczka - pozycja zajęta");
+            return;
+        }
+        
+        // Sprawdź, czy nie ma już kubeczka dokładnie w tej pozycji
         const existingCup = config.cups.find(cup => {
             const cupX = cup.cupImage.x() + config.cupWidth / 2;
             const cupY = cup.cupImage.y() + config.cupHeight / 2;
@@ -504,19 +648,89 @@ document.addEventListener('DOMContentLoaded', function() {
             return Math.abs(cupX - finalX) < 5 && Math.abs(cupY - finalY) < 5;
         });
         
-        if (!existingCup) {
-            // Dodaj kubeczek w określonej pozycji, z przesunięciem, by centrum kubeczka było w punkcie siatki
-            addCup(finalX - config.cupWidth / 2, finalY - config.cupHeight / 2, cupDirection);
-        } else {
+        if (existingCup) {
             // Zmień kolor istniejącego kubeczka
             updateCupColor(existingCup, config.selectedCupColor);
+        } else {
+            // Dodaj kubeczek w określonej pozycji, z przesunięciem, by centrum kubeczka było w punkcie siatki
+            addCup(finalX - config.cupWidth / 2, finalY - config.cupHeight / 2, cupDirection);
+            
+            // Opcjonalnie: Wyświetl informację o typie umieszczenia (pomocne w debugowaniu)
+            // console.log(`Umieszczono kubeczek w trybie: ${placementType}`);
         }
+    }
+    
+    /**
+     * Znajduje najbliższą wolną pozycję na siatce
+     * @param {number} startX - Początkowa pozycja X
+     * @param {number} startY - Początkowa pozycja Y
+     * @returns {Object|null} - Współrzędne znalezionej pozycji lub null jeśli nie znaleziono
+     */
+    function findNearestFreePosition(startX, startY) {
+        // Maksymalna odległość poszukiwań (w punktach siatki)
+        const maxSearchDistance = 3;
+        
+        // Sprawdź oryginalną pozycję jeszcze raz (może być już wolna)
+        if (isPositionClear(startX, startY) && isWithinCanvasBounds(startX, startY)) {
+            return { x: startX, y: startY };
+        }
+        
+        // Sprawdź pozycje wokół wskazanej lokalizacji w kręgach o rosnącym promieniu
+        for (let distance = 1; distance <= maxSearchDistance; distance++) {
+            // Sprawdź punkty siatki w kwadracie o boku 2*distance wokół startowego punktu
+            for (let dy = -distance; dy <= distance; dy++) {
+                for (let dx = -distance; dx <= distance; dx++) {
+                    // Pomijamy punkty, które nie leżą na obwodzie kwadratu
+                    if (Math.abs(dx) < distance && Math.abs(dy) < distance) continue;
+                    
+                    // Oblicz potencjalną pozycję
+                    const testX = startX + dx * config.gridSpacing;
+                    const testY = startY + dy * config.gridSpacing;
+                    
+                    // Sprawdź, czy pozycja jest w granicach canvas uwzględniając rozmiar kubeczka
+                    if (!isWithinCanvasBounds(testX, testY)) {
+                        continue;
+                    }
+                    
+                    // Sprawdź, czy pozycja jest wolna
+                    if (isPositionClear(testX, testY)) {
+                        return { x: testX, y: testY };
+                    }
+                }
+            }
+        }
+        
+        // Nie znaleziono wolnej pozycji
+        return null;
+    }
+    
+    /**
+     * Sprawdza, czy pozycja kubeczka mieści się w granicach canvas
+     * @param {number} x - Pozycja X środka kubeczka
+     * @param {number} y - Pozycja Y środka kubeczka
+     * @returns {boolean} - true jeśli kubeczek mieści się w canvas, false jeśli nie
+     */
+    function isWithinCanvasBounds(x, y) {
+        const halfWidth = config.cupWidth / 2;
+        const halfHeight = config.cupHeight / 2;
+        
+        return x - halfWidth >= 0 && 
+               x + halfWidth <= config.stageWidth && 
+               y - halfHeight >= 0 && 
+               y + halfHeight <= config.stageHeight;
     }
     
     /**
      * Add a cup to the grid
      */
     function addCup(x, y, direction) {
+        // Sprawdź, czy kubeczek nie wychodzi poza granice canvas
+        if (x < 0 || x + config.cupWidth > config.stageWidth || 
+            y < 0 || y + config.cupHeight > config.stageHeight) {
+            console.log("Nie można umieścić kubeczka - wyszedłby poza granice płótna");
+            return;
+        }
+        
         // Stwórz obraz kubeczka
         const cupImage = new Konva.Image({
             x: x,
@@ -729,18 +943,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const desiredCanvasSize = config.gridSize * desiredCellSize;
             
             // Oblicz najlepszy rozmiar canvas, nie przekraczając dostępnej szerokości
-            const newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
+            let newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
+            
+            // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
+            let cellSize = window.pyramidUtils.calculateCellSize(newCanvasSize, config.gridSize);
+            
+            // Oblicz odstęp siatki na podstawie szerokości kubeczka
+            config.gridSpacing = cellSize / 2;
+            
+            // Upewnij się, że canvas ma rozmiar, który jest wielokrotnością odstępu siatki
+            // dzięki temu grid będzie zawsze kończył się dokładnie na krawędzi canvas
+            const gridCellCount = Math.floor(newCanvasSize / config.gridSpacing);
+            newCanvasSize = gridCellCount * config.gridSpacing;
+            
+            // Zaktualizuj rozmiary
             config.stageWidth = newCanvasSize;
             config.stageHeight = newCanvasSize;
+            config.cupWidth = cellSize;
+            config.cupHeight = cellSize;
             
             // Aktualizuj rozmiar stage
             stage.width(config.stageWidth);
             stage.height(config.stageHeight);
-            
-            // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
-            const cellSize = window.pyramidUtils.calculateCellSize(stage.width(), config.gridSize);
-            config.cupWidth = cellSize;
-            config.cupHeight = cellSize;
             
             drawGrid();
         });

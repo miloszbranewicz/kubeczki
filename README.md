@@ -10,6 +10,8 @@ Aplikacja do projektowania i wizualizacji różnorodnych konstrukcji z kubeczkó
 - Wizualna siatka pomocnicza ułatwiająca precyzyjne umieszczanie kubeczków
 - Zaawansowana analiza wzorców konstrukcji dla lepszego rozpoznawania intencji użytkownika
 - Adaptacyjne zachowanie dopasowujące nowe kubeczki do istniejących struktur
+- Ochrona przed kolizjami zapobiegająca nakładaniu się kubeczków
+- Inteligentny system znajdowania najbliższej wolnej pozycji w przypadku zajętego miejsca
 - Różne kolory kubeczków do wyboru
 - Eksport projektu do PDF
 - Testowanie automatyczne poprzez wbudowane funkcje
@@ -31,18 +33,21 @@ Aplikacja automatycznie rozpoznaje zamierzony typ konstrukcji:
 - Kubeczki w piramidzie są ustawiane naprzemiennie wierzchołkiem w górę i w dół
 - Aplikacja automatycznie wykrywa wymagane wsparcie i umieszcza kubeczek w odpowiednim miejscu
 - System analizuje istniejące wzorce piramid, aby zachować spójność konstrukcji
+- W przypadku wielu możliwych podpór, system inteligentnie wybiera najlepsze kubeczki wspierające
 
 #### Stosy
 - Kliknij nad kubeczkiem, aby postawić na nim kolejny kubeczek
 - Kubeczki w stosie są ustawiane naprzemiennie wierzchołkiem w górę i w dół
 - Aplikacja automatycznie wykrywa kubeczek pod spodem i umieszcza nowy kubeczek dokładnie nad nim
 - System analizuje istniejące stosy, aby utrzymać spójność konstrukcji w pionie
+- Ochrona przed niestabilnymi konstrukcjami zapobiega umieszczaniu kubeczków w sposób nieprawidłowy
 
 #### Konstrukcje podstawowe
 - Kliknij w dowolnym pustym miejscu, aby umieścić pierwszy kubeczek
 - Kubeczki są automatycznie przyciągane do najbliższego punktu siatki
 - Buduj kolejne elementy konstrukcji, korzystając z trybu piramidy lub stosu
 - System analizuje kontekst i okoliczne kubeczki, aby lepiej zrozumieć zamierzoną strukturę
+- W przypadku kolizji, system automatycznie znajdzie najbliższe wolne miejsce
 
 ### System wyrównywania do siatki
 - Aplikacja wyświetla wizualną siatkę pomocniczą
@@ -55,6 +60,12 @@ Aplikacja automatycznie rozpoznaje zamierzony typ konstrukcji:
 - Na podstawie analizy kontekstu i probabilistycznego podejścia, aplikacja lepiej rozpoznaje intencje użytkownika
 - Kubeczki są automatycznie ustawiane w odpowiednim kierunku (wierzchołkiem w górę lub w dół) w zależności od typu konstrukcji
 - Aplikacja dostosowuje położenie nowych kubeczków do istniejących wzorców, zachowując spójność konstrukcji
+
+### System ochrony przed kolizjami
+- Zaawansowany algorytm wykrywania kolizji zapobiega nakładaniu się kubeczków
+- W przypadku próby umieszczenia kubeczka w zajętym miejscu, system automatycznie znajdzie najbliższe wolne miejsce
+- Adaptacyjne wyszukiwanie wolnych miejsc w rozszerzających się okręgach od punktu kliknięcia
+- Inteligentne sprawdzanie dostępnej przestrzeni przed umieszczeniem kubeczka w konstrukcji piramidowej lub stosie
 
 ### Testowanie
 Aplikacja zawiera funkcje testowe dostępne w konsoli przeglądarki:
@@ -71,6 +82,7 @@ Aplikacja zawiera funkcje testowe dostępne w konsoli przeglądarki:
 - W stosie kubeczki są układane jeden na drugim
 - Zwróć uwagę na kierunek kubeczków (wierzchołkiem w górę lub w dół)
 - Dla estetycznego wyglądu, warto zachować równe odstępy między kubeczkami
+- Aby konstrukcja była stabilna, kubeczki nie powinny na siebie nachodzić
 
 ## Technologie
 
