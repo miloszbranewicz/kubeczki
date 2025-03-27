@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
         buildingMode: 'auto',
         ROW_SPACING: 45, // Odstęp między rzędami dla trybu piramidy
         STACK_SPACING: 60, // Odstęp dla kubeczków ułożonych jeden na drugim
-        showGrid: true, // Pokazuje siatkę dla lepszej orientacji
+        showGrid: true, // Czy pokazywać siatkę pomocniczą
         gridSpacing: 30,  // Odległość między punktami siatki
-        snapToGridOnDragEnd: true // Nowa właściwość
+        snapToGridOnDragEnd: true // Czy przyciągać do siatki
     };
     
     // DOM elements
@@ -59,6 +59,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         window.pyramidUtils.createDebugInfo(config, config.cups);
     }
+    
+    // Globals for message throttling
+    let lastMessageTimestamp = 0;
+    const MESSAGE_THROTTLE_MS = 1000; // Show message at most once per second
     
     /**
      * Initialize the cups selection toolbar
@@ -228,16 +232,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     finalY = snapped.y;
                 }
                 
+                // Ensure position is inside canvas boundaries, accounting for cup dimensions
+                const halfWidth = config.cupWidth / 2;
+                const halfHeight = config.cupHeight / 2;
+                
+                // Check if the cup would be partially outside the canvas
+                if (finalX - halfWidth < 0) {
+                    finalX = halfWidth;
+                } else if (finalX + halfWidth > config.stageWidth) {
+                    finalX = config.stageWidth - halfWidth;
+                }
+                
+                if (finalY - halfHeight < 0) {
+                    finalY = halfHeight;
+                } else if (finalY + halfHeight > config.stageHeight) {
+                    finalY = config.stageHeight - halfHeight;
+                }
+                
                 // Dodaj kubeczek, uwzględniając środek kubeczka
-                addCup(
-                    finalX - config.cupWidth / 2, 
-                    finalY - config.cupHeight / 2, 
-                    'down' // Domyślny kierunek kubeczka
-                );
+                const centerX = finalX;
+                const centerY = finalY;
+                
+                // Check if the position is clear of other cups
+                if (isPositionClear(centerX, centerY)) {
+                    addCup(
+                        finalX - config.cupWidth / 2, 
+                        finalY - config.cupHeight / 2, 
+                        'down' // Domyślny kierunek kubeczka
+                    );
+                } else {
+                    console.log("Nie można umieścić kubeczka - pozycja zajęta przez inny kubeczek");
+                    showTemporaryMessage('Nie można umieścić kubeczka na innym kubeczku', finalX, finalY - 30);
+                }
             }
         });
         
         gridLayer.draw();
+    }
+    
+    /**
+     * Przyciąga pozycję do najbliższego punktu siatki
+     * @param {number} x - Pozycja X
+     * @param {number} y - Pozycja Y
+     * @returns {{x: number, y: number}} - Pozycja przyciągnięta do siatki
+     */
+    function snapToGrid(x, y) {
+        // Oblicz najbliższy punkt siatki
+        const gridX = Math.round(x / config.gridSpacing) * config.gridSpacing;
+        const gridY = Math.round(y / config.gridSpacing) * config.gridSpacing;
+        
+        return { x: gridX, y: gridY };
     }
     
     /**
@@ -248,6 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function isPositionClear(x, y) {
         // Minimalna dopuszczalna odległość między środkami kubeczków
+        // Ustawione na 85% szerokości kubeczka dla odpowiedniego rozdzielenia
         const minDistanceSquared = Math.pow(config.cupWidth * 0.85, 2);
         
         // Sprawdź odległość od wszystkich istniejących kubeczków
@@ -464,39 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Przyciąga pozycję do najbliższego punktu siatki
-     * z uwzględnieniem granic canvas
-     */
-    function snapToGrid(x, y) {
-        const gridSpacing = config.gridSpacing;
-        const halfWidth = config.cupWidth / 2;
-        const halfHeight = config.cupHeight / 2;
-        
-        // Znajdź najbliższy punkt siatki
-        let snappedX = Math.round(x / gridSpacing) * gridSpacing;
-        let snappedY = Math.round(y / gridSpacing) * gridSpacing;
-        
-        // Upewnij się, że po przyciągnięciu do siatki kubeczek nie wyjdzie poza granice canvas
-        if (snappedX - halfWidth < 0) {
-            snappedX = halfWidth;
-        } else if (snappedX + halfWidth > config.stageWidth) {
-            snappedX = config.stageWidth - halfWidth;
-        }
-        
-        if (snappedY - halfHeight < 0) {
-            snappedY = halfHeight;
-        } else if (snappedY + halfHeight > config.stageHeight) {
-            snappedY = config.stageHeight - halfHeight;
-        }
-        
-        // Przyciągnij ponownie do najbliższego punktu siatki z uwzględnieniem ograniczeń
-        snappedX = Math.round(snappedX / gridSpacing) * gridSpacing;
-        snappedY = Math.round(snappedY / gridSpacing) * gridSpacing;
-        
-        return { x: snappedX, y: snappedY };
-    }
-    
-    /**
      * Znajduje wzorce stosów w istniejącej konstrukcji
      */
     function findStackPatterns() {
@@ -636,28 +648,19 @@ document.addEventListener('DOMContentLoaded', function() {
             finalY - config.cupHeight / 2 < 0 || 
             finalY + config.cupHeight / 2 > config.stageHeight) {
             
-            console.log("Nie można umieścić kubeczka - wyszedłby poza granice płótna");
-            
-            // Opcjonalnie - dodaj wizualną informację dla użytkownika
-            const alertText = new Konva.Text({
-                x: Math.min(Math.max(finalX, 50), config.stageWidth - 100),
-                y: Math.min(Math.max(finalY, 50), config.stageHeight - 30),
-                text: 'Kubeczek wychodzi poza płótno!',
-                fontSize: 16,
-                fontFamily: 'Arial',
-                fill: 'red',
-            });
-            
-            gridLayer.add(alertText);
-            gridLayer.draw();
-            
-            // Usuń komunikat po 2 sekundach
-            setTimeout(() => {
-                alertText.destroy();
-                gridLayer.draw();
-            }, 2000);
-            
-            return;
+            // Zamiast tylko wyświetlać komunikat, dostosuj pozycję tak, aby kubeczek był wewnątrz canvas
+            if (finalX - config.cupWidth / 2 < 0) {
+                finalX = config.cupWidth / 2;
+            }
+            if (finalX + config.cupWidth / 2 > config.stageWidth) {
+                finalX = config.stageWidth - config.cupWidth / 2;
+            }
+            if (finalY - config.cupHeight / 2 < 0) {
+                finalY = config.cupHeight / 2;
+            }
+            if (finalY + config.cupHeight / 2 > config.stageHeight) {
+                finalY = config.stageHeight - config.cupHeight / 2;
+            }
         }
         
         // Ostateczne sprawdzenie, czy pozycja jest wolna
@@ -724,13 +727,15 @@ document.addEventListener('DOMContentLoaded', function() {
      * @returns {boolean} - true jeśli kubeczek mieści się w canvas, false jeśli nie
      */
     function isWithinCanvasBounds(x, y) {
+        // Sprawdź czy kubeczek umieszczony na podanych koordynatach
+        // będzie całkowicie wewnątrz canvas
         const halfWidth = config.cupWidth / 2;
         const halfHeight = config.cupHeight / 2;
         
-        return x - halfWidth >= 0 && 
-               x + halfWidth <= config.stageWidth && 
-               y - halfHeight >= 0 && 
-               y + halfHeight <= config.stageHeight;
+        return (x - halfWidth >= 0) && 
+               (x + halfWidth <= config.stageWidth) && 
+               (y - halfHeight >= 0) && 
+               (y + halfHeight <= config.stageHeight);
     }
     
     /**
@@ -741,7 +746,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (x < 0 || x + config.cupWidth > config.stageWidth || 
             y < 0 || y + config.cupHeight > config.stageHeight) {
             console.log("Nie można umieścić kubeczka - wyszedłby poza granice płótna");
-            return;
+            
+            // Adjust the position to be within the canvas boundaries
+            if (x < 0) x = 0;
+            if (x + config.cupWidth > config.stageWidth) x = config.stageWidth - config.cupWidth;
+            if (y < 0) y = 0;
+            if (y + config.cupHeight > config.stageHeight) y = config.stageHeight - config.cupHeight;
         }
         
         // Stwórz obraz kubeczka
@@ -789,39 +799,165 @@ document.addEventListener('DOMContentLoaded', function() {
             cupsLayer.draw();
         });
         
-        cupImage.on('dragmove', function() {
-            // Aktualizuj pozycję kubeczka bez sprawdzania kolizji podczas przeciągania
-            // dla płynniejszego doświadczenia
-        });
-        
-        cupImage.on('dragend', function() {
-            // Sprawdź, czy kubeczek nie wyszedł poza granice canvas
-            const x = this.x();
-            const y = this.y();
+        cupImage.on('dragmove', function(e) {
+            // Store original position
+            const originalPos = {
+                x: this.x(),
+                y: this.y()
+            };
             
-            if (x < 0) {
+            // Check canvas boundaries first
+            const pos = this.position();
+            
+            // Prevent cups from being dragged outside canvas boundaries
+            if (pos.x < 0) {
                 this.x(0);
-            } else if (x + config.cupWidth > config.stageWidth) {
+            } else if (pos.x + config.cupWidth > config.stageWidth) {
                 this.x(config.stageWidth - config.cupWidth);
             }
             
-            if (y < 0) {
+            if (pos.y < 0) {
                 this.y(0);
-            } else if (y + config.cupHeight > config.stageHeight) {
+            } else if (pos.y + config.cupHeight > config.stageHeight) {
                 this.y(config.stageHeight - config.cupHeight);
             }
             
-            // Opcjonalnie: przyciąganie do siatki po zakończeniu przeciągania
-            if (config.snapToGridOnDragEnd) {
-                const newPos = snapToGrid(
-                    this.x() + config.cupWidth / 2, 
-                    this.y() + config.cupHeight / 2
-                );
-                this.x(newPos.x - config.cupWidth / 2);
-                this.y(newPos.y - config.cupHeight / 2);
+            // After boundary adjustment, check for collisions with other cups
+            const centerX = this.x() + config.cupWidth / 2;
+            const centerY = this.y() + config.cupHeight / 2;
+            
+            // Temporarily remove this cup from the cups array to avoid self-collision
+            const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
+            let currentCup = null;
+            
+            if (cupIndex !== -1) {
+                currentCup = config.cups.splice(cupIndex, 1)[0];
             }
             
-            cupsLayer.draw();
+            // Check if the position is clear
+            const positionClear = isPositionClear(centerX, centerY);
+            
+            // Add the cup back to the array
+            if (currentCup) {
+                config.cups.push(currentCup);
+            }
+            
+            // If there's a collision, revert to the original position and show visual feedback
+            if (!positionClear) {
+                this.position(originalPos);
+                e.cancelBubble = true; // Stops the drag event
+                
+                // Visual feedback - add a red tint to indicate collision
+                this.cache();
+                this.filters([Konva.Filters.RGBA]);
+                this.red(255);
+                this.green(180);
+                this.blue(180);
+                
+                // Show a message about collision (now with throttling)
+                const stagePos = stage.getPointerPosition();
+                if (stagePos) {
+                    showTemporaryMessage('Nie można umieścić kubeczka na innym kubeczku', stagePos.x, stagePos.y - 30);
+                    // No need to check the return value as the visual cue will still show
+                }
+                
+                // Reset the filter after a brief moment
+                setTimeout(() => {
+                    this.filters([]);
+                    this.clearCache();
+                    cupsLayer.batchDraw();
+                }, 200);
+            } else {
+                // Reset any filters that might be active
+                this.filters([]);
+                this.clearCache();
+            }
+            
+            cupsLayer.batchDraw();
+        });
+        
+        // Handle drag end
+        cupImage.on('dragend', function() {
+            const pos = this.position();
+            const originalPos = {
+                x: pos.x,
+                y: pos.y
+            };
+            
+            let finalX = pos.x;
+            let finalY = pos.y;
+            
+            // Only snap to grid if the option is enabled
+            let snappedPosition = null;
+            if (config.snapToGridOnDragEnd) {
+                snappedPosition = snapToGrid(pos.x, pos.y);
+                finalX = snappedPosition.x;
+                finalY = snappedPosition.y;
+            }
+            
+            // Ensure the cup stays within canvas boundaries
+            if (finalX < 0) {
+                finalX = 0;
+            } else if (finalX + config.cupWidth > config.stageWidth) {
+                finalX = config.stageWidth - config.cupWidth;
+            }
+            
+            if (finalY < 0) {
+                finalY = 0;
+            } else if (finalY + config.cupHeight > config.stageHeight) {
+                finalY = config.stageHeight - config.cupHeight;
+            }
+            
+            // Check for collision with other cups
+            const centerX = finalX + config.cupWidth / 2;
+            const centerY = finalY + config.cupHeight / 2;
+            
+            // Temporarily remove this cup from the cups array to avoid self-collision
+            const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
+            let currentCup = null;
+            
+            if (cupIndex !== -1) {
+                currentCup = config.cups.splice(cupIndex, 1)[0];
+            }
+            
+            // Check if position is clear of other cups
+            let positionClear = isPositionClear(centerX, centerY);
+            
+            // If the snapped position has a collision, try to find a nearby free position
+            if (!positionClear && snappedPosition) {
+                const freePosition = findNearestFreePosition(centerX, centerY);
+                
+                if (freePosition) {
+                    finalX = freePosition.x - config.cupWidth / 2;
+                    finalY = freePosition.y - config.cupHeight / 2;
+                    positionClear = true;
+                }
+            }
+            
+            // Add cup back to the array
+            if (currentCup) {
+                config.cups.push(currentCup);
+            }
+            
+            // If there is still a collision, revert to previous position
+            if (!positionClear) {
+                finalX = originalPos.x;
+                finalY = originalPos.y;
+            }
+            
+            this.position({
+                x: finalX,
+                y: finalY
+            });
+            
+            this.attrs.x = finalX;
+            this.attrs.y = finalY;
+            
+            // Make sure any visual effects from dragmove are cleared
+            this.filters([]);
+            this.clearCache();
+            
+            cupsLayer.batchDraw();
         });
         
         // Dodaj kubeczek do warstwy i tablicy kubeczków
@@ -1022,6 +1158,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Grid visibility toggle
+        const showGridCheckbox = document.getElementById('show-grid');
+        if (showGridCheckbox) {
+            showGridCheckbox.addEventListener('change', function() {
+                config.showGrid = this.checked;
+                drawGrid();
+            });
+        }
+        
         // Clear button
         clearBtn.addEventListener('click', clearCups);
         
@@ -1061,5 +1206,55 @@ document.addEventListener('DOMContentLoaded', function() {
             
             drawGrid();
         });
+    }
+    
+    /**
+     * Display a temporary message on the canvas
+     * @param {string} message - The message to display
+     * @param {number} x - X position for the message
+     * @param {number} y - Y position for the message
+     * @returns {boolean} - Whether the message was displayed (false if throttled)
+     */
+    function showTemporaryMessage(message, x, y) {
+        // Check if we should throttle the message
+        const now = Date.now();
+        if (now - lastMessageTimestamp < MESSAGE_THROTTLE_MS) {
+            return false; // Skip this message due to throttling
+        }
+        
+        // Update the timestamp
+        lastMessageTimestamp = now;
+        
+        // Create text node
+        const text = new Konva.Text({
+            x: x,
+            y: y,
+            text: message,
+            fontSize: 14,
+            fontFamily: 'Arial',
+            fill: '#d22',
+            padding: 10,
+            opacity: 1
+        });
+        
+        // Add to grid layer so it's on top
+        gridLayer.add(text);
+        gridLayer.batchDraw();
+        
+        // Fade out and remove
+        const tween = new Konva.Tween({
+            node: text,
+            duration: 0.75,
+            opacity: 0,
+            onFinish: () => {
+                text.destroy();
+                gridLayer.batchDraw();
+            }
+        });
+        
+        // Start the animation
+        tween.play();
+        
+        return true; // Message was displayed
     }
 }); 

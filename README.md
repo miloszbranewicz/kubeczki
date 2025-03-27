@@ -6,6 +6,7 @@ Aplikacja do projektowania i wizualizacji różnorodnych konstrukcji z kubeczkó
 
 - Przeciąganie i upuszczanie kubeczków dla pełnej kontroli nad ich pozycjonowaniem
 - Opcjonalne przyciąganie do siatki, które można włączyć lub wyłączyć
+- Możliwość pokazania lub ukrycia siatki pomocniczej
 - Obracanie kubeczków po kliknięciu
 - Wyrównywanie do siatki zapewniające idealnie równe rozmieszczenie kubeczków
 - Wizualna siatka pomocnicza ułatwiająca precyzyjne umieszczanie kubeczków
@@ -24,7 +25,8 @@ Aplikacja do projektowania i wizualizacji różnorodnych konstrukcji z kubeczkó
 5. Kliknij na istniejący kubeczek, aby go obrócić (zmienić kierunek wierzchołka)
 6. Przeciągnij i upuść kubeczek, aby zmienić jego pozycję
 7. Użyj opcji "Przyciągaj do siatki", aby włączyć lub wyłączyć automatyczne wyrównywanie
-8. Użyj przycisku "Eksportuj do PDF", aby zapisać swój projekt
+8. Użyj opcji "Pokaż siatkę", aby włączyć lub wyłączyć widoczność siatki pomocniczej
+9. Użyj przycisku "Eksportuj do PDF", aby zapisać swój projekt
 
 ### Budowanie konstrukcji
 Aplikacja oferuje pełną swobodę w projektowaniu konstrukcji:
@@ -46,7 +48,7 @@ Aplikacja oferuje pełną swobodę w projektowaniu konstrukcji:
 - Obracaj kubeczki, aby uzyskać naprzemienne ustawienie wierzchołkiem w górę i w dół
 
 ### System wyrównywania do siatki
-- Aplikacja wyświetla wizualną siatkę pomocniczą
+- Aplikacja wyświetla opcjonalną siatkę pomocniczą, którą można włączyć lub wyłączyć
 - Opcja przyciągania do siatki może być włączona lub wyłączona w dowolnym momencie
 - Zapewnia idealne wyrównanie wszystkich elementów konstrukcji
 - Siatka jest ukrywana w eksportowanym pliku PDF
