@@ -4,14 +4,12 @@ Aplikacja do projektowania i wizualizacji różnorodnych konstrukcji z kubeczkó
 
 ## Funkcje
 
-- Inteligentny system układania kubeczków w formie piramid lub stosów
-- Automatyczne rozpoznawanie zamierzonego typu konstrukcji
+- Przeciąganie i upuszczanie kubeczków dla pełnej kontroli nad ich pozycjonowaniem
+- Opcjonalne przyciąganie do siatki, które można włączyć lub wyłączyć
+- Obracanie kubeczków po kliknięciu
 - Wyrównywanie do siatki zapewniające idealnie równe rozmieszczenie kubeczków
 - Wizualna siatka pomocnicza ułatwiająca precyzyjne umieszczanie kubeczków
-- Zaawansowana analiza wzorców konstrukcji dla lepszego rozpoznawania intencji użytkownika
-- Adaptacyjne zachowanie dopasowujące nowe kubeczki do istniejących struktur
 - Ochrona przed kolizjami zapobiegająca nakładaniu się kubeczków
-- Inteligentny system znajdowania najbliższej wolnej pozycji w przypadku zajętego miejsca
 - Różne kolory kubeczków do wyboru
 - Eksport projektu do PDF
 - Testowanie automatyczne poprzez wbudowane funkcje
@@ -23,49 +21,41 @@ Aplikacja do projektowania i wizualizacji różnorodnych konstrukcji z kubeczkó
 2. Kliknij na kolor kubeczka, który chcesz użyć
 3. Kliknij na siatkę, aby umieścić kubeczek
 4. Kliknij prawym przyciskiem myszy na kubeczek, aby go usunąć
-5. Użyj przycisku "Eksportuj do PDF", aby zapisać swój projekt
+5. Kliknij na istniejący kubeczek, aby go obrócić (zmienić kierunek wierzchołka)
+6. Przeciągnij i upuść kubeczek, aby zmienić jego pozycję
+7. Użyj opcji "Przyciągaj do siatki", aby włączyć lub wyłączyć automatyczne wyrównywanie
+8. Użyj przycisku "Eksportuj do PDF", aby zapisać swój projekt
 
 ### Budowanie konstrukcji
-Aplikacja automatycznie rozpoznaje zamierzony typ konstrukcji:
+Aplikacja oferuje pełną swobodę w projektowaniu konstrukcji:
+
+#### Swobodne umieszczanie
+- Umieszczaj kubeczki w dowolnym miejscu na planszy
+- Przesuwaj kubeczki metodą przeciągnij i upuść
+- Optymalizuj rozmieszczenie dzięki opcjonalnemu przyciąganiu do siatki
+- Obrót kubeczków przez kliknięcie pozwala tworzyć różnorodne układy
 
 #### Piramidy
-- Kliknij między dwoma kubeczkami, aby umieścić nowy kubeczek na środku nad nimi
-- Kubeczki w piramidzie są ustawiane naprzemiennie wierzchołkiem w górę i w dół
-- Aplikacja automatycznie wykrywa wymagane wsparcie i umieszcza kubeczek w odpowiednim miejscu
-- System analizuje istniejące wzorce piramid, aby zachować spójność konstrukcji
-- W przypadku wielu możliwych podpór, system inteligentnie wybiera najlepsze kubeczki wspierające
+- Układaj kubeczki w formie piramidy, jeden nad drugim
+- Obroty kubeczków pozwalają tworzyć stabilne konstrukcje
+- Używaj przyciągania do siatki dla idealnego wyrównania
 
 #### Stosy
-- Kliknij nad kubeczkiem, aby postawić na nim kolejny kubeczek
-- Kubeczki w stosie są ustawiane naprzemiennie wierzchołkiem w górę i w dół
-- Aplikacja automatycznie wykrywa kubeczek pod spodem i umieszcza nowy kubeczek dokładnie nad nim
-- System analizuje istniejące stosy, aby utrzymać spójność konstrukcji w pionie
-- Ochrona przed niestabilnymi konstrukcjami zapobiega umieszczaniu kubeczków w sposób nieprawidłowy
-
-#### Konstrukcje podstawowe
-- Kliknij w dowolnym pustym miejscu, aby umieścić pierwszy kubeczek
-- Kubeczki są automatycznie przyciągane do najbliższego punktu siatki
-- Buduj kolejne elementy konstrukcji, korzystając z trybu piramidy lub stosu
-- System analizuje kontekst i okoliczne kubeczki, aby lepiej zrozumieć zamierzoną strukturę
-- W przypadku kolizji, system automatycznie znajdzie najbliższe wolne miejsce
+- Układaj kubeczki jeden na drugim
+- Przesuwaj całe stosy, aby zmieniać układ
+- Obracaj kubeczki, aby uzyskać naprzemienne ustawienie wierzchołkiem w górę i w dół
 
 ### System wyrównywania do siatki
 - Aplikacja wyświetla wizualną siatkę pomocniczą
-- Wszystkie kubeczki są automatycznie przyciągane do punktów siatki
+- Opcja przyciągania do siatki może być włączona lub wyłączona w dowolnym momencie
 - Zapewnia idealne wyrównanie wszystkich elementów konstrukcji
 - Siatka jest ukrywana w eksportowanym pliku PDF
 
-### Zaawansowane rozpoznawanie wzorców
-- System analizuje istniejące układy kubeczków, aby wykryć wzorce piramid i stosów
-- Na podstawie analizy kontekstu i probabilistycznego podejścia, aplikacja lepiej rozpoznaje intencje użytkownika
-- Kubeczki są automatycznie ustawiane w odpowiednim kierunku (wierzchołkiem w górę lub w dół) w zależności od typu konstrukcji
-- Aplikacja dostosowuje położenie nowych kubeczków do istniejących wzorców, zachowując spójność konstrukcji
-
-### System ochrony przed kolizjami
-- Zaawansowany algorytm wykrywania kolizji zapobiega nakładaniu się kubeczków
-- W przypadku próby umieszczenia kubeczka w zajętym miejscu, system automatycznie znajdzie najbliższe wolne miejsce
-- Adaptacyjne wyszukiwanie wolnych miejsc w rozszerzających się okręgach od punktu kliknięcia
-- Inteligentne sprawdzanie dostępnej przestrzeni przed umieszczeniem kubeczka w konstrukcji piramidowej lub stosie
+### Przeciąganie i upuszczanie
+- Kliknij i przytrzymaj kubeczek, aby rozpocząć przeciąganie
+- Przesuń kubeczek w dowolne miejsce na planszy
+- Puść przycisk myszy, aby upuścić kubeczek w nowej pozycji
+- Z włączonym przyciąganiem do siatki, kubeczek zostanie automatycznie wyrównany do najbliższego punktu siatki
 
 ### Testowanie
 Aplikacja zawiera funkcje testowe dostępne w konsoli przeglądarki:

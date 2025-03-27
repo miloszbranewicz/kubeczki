@@ -54,6 +54,23 @@ h1 {
     background-color: white;
 }
 
+.grid-options {
+    display: flex;
+    align-items: center;
+}
+
+.grid-options label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.grid-options input[type="checkbox"] {
+    margin-right: 5px;
+    cursor: pointer;
+}
+
 .actions button {
     padding: 8px 15px;
     margin-left: 10px;
@@ -128,6 +145,22 @@ h1 {
     background-color: white;
 }
 
+/* Styl dla draggable cups */
+.konvajs-content canvas {
+    cursor: default;
+}
+
+/* Kubeczki powinny mieć kursor wskazujący, że można je przesuwać */
+.konvajs-content[style*="cursor: default"] canvas {
+    cursor: move;
+    cursor: grab;
+}
+
+.konvajs-content[style*="cursor: move"] canvas,
+.konvajs-content[style*="cursor: grabbing"] canvas {
+    cursor: grabbing;
+}
+
 .instructions {
     padding: 15px;
     background-color: #f1f1f1;
@@ -150,6 +183,11 @@ h1 {
     .controls {
         flex-direction: column;
         gap: 15px;
+    }
+    
+    .size-selector, .grid-options {
+        width: 100%;
+        margin-bottom: 10px;
     }
     
     .actions {

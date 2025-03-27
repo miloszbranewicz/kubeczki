@@ -26,6 +26,13 @@
                 </select>
             </div>
             
+            <div class="grid-options">
+                <label for="snap-to-grid">
+                    <input type="checkbox" id="snap-to-grid" checked> 
+                    Przyciągaj do siatki
+                </label>
+            </div>
+            
             <div class="actions">
                 <button id="clear-btn">Wyczyść</button>
                 <button id="export-btn">Eksportuj do PDF</button>
@@ -47,25 +54,25 @@
                 <li>Wybierz rozmiar siatki z rozwijanej listy.</li>
                 <li>Kliknij na kolor kubeczka, który chcesz użyć.</li>
                 <li>Kliknij na siatkę, aby umieścić kubeczek.</li>
+                <li>Kliknij na istniejący kubeczek, aby go obrócić.</li>
+                <li>Przeciągnij i upuść kubeczek, aby zmienić jego pozycję.</li>
                 <li>Kliknij prawym przyciskiem myszy na kubeczek, aby go usunąć.</li>
+                <li>Użyj opcji "Przyciągaj do siatki", aby włączyć lub wyłączyć automatyczne wyrównywanie do siatki.</li>
                 <li>Użyj przycisku "Eksportuj do PDF", aby zapisać swoją konstrukcję.</li>
             </ol>
             <p>W aplikacji możesz budować różne typy konstrukcji:</p>
             <ul>
-                <li><strong>Piramidy:</strong> kliknij między dwoma kubeczkami, aby umieścić kubeczek na środku nad nimi.</li>
-                <li><strong>Stosy:</strong> kliknij nad kubeczkiem, aby postawić na nim kolejny kubeczek.</li>
-                <li><strong>Dowolne konstrukcje:</strong> kliknij w pustym miejscu, aby rozpocząć nową konstrukcję.</li>
+                <li><strong>Dowolne konstrukcje:</strong> swobodnie umieszczaj i przesuwaj kubeczki w dowolne miejsce na planszy.</li>
+                <li><strong>Piramidy:</strong> układaj kubeczki jeden nad drugim w formie piramidy.</li>
+                <li><strong>Stosy:</strong> układaj kubeczki jeden na drugim.</li>
             </ul>
             <p>Dodatkowe funkcje:</p>
             <ul>
-                <li><strong>Wyrównanie do siatki:</strong> wszystkie kubeczki są automatycznie przyciągane do punktów siatki, zapewniając idealnie równe rozmieszczenie.</li>
-                <li><strong>Inteligentne wykrywanie:</strong> aplikacja automatycznie rozpoznaje zamierzony typ konstrukcji i odpowiednio dostosowuje położenie kubeczków.</li>
-                <li><strong>Zaawansowana analiza wzorców:</strong> system analizuje istniejące wzorce i kontekst, aby lepiej rozpoznać zamierzony typ konstrukcji (piramida, stos lub zwykłe umieszczenie).</li>
-                <li><strong>Adaptacyjne zachowanie:</strong> aplikacja dostosowuje położenie nowych kubeczków do istniejących wzorców konstrukcji, ułatwiając tworzenie spójnych struktur.</li>
-                <li><strong>Ochrona przed kolizjami:</strong> system zapobiega nakładaniu się kubeczków na siebie, automatycznie znajdując najbliższe wolne miejsce w przypadku kolizji.</li>
-                <li><strong>Precyzyjne wybieranie podpór:</strong> w przypadku wielu możliwych podpór dla piramidy, system inteligentnie wybiera najlepsze kubeczki wspierające.</li>
+                <li><strong>Przeciąganie i upuszczanie:</strong> możesz swobodnie przesuwać kubeczki po planszy.</li>
+                <li><strong>Przyciąganie do siatki:</strong> kubeczki mogą być automatycznie wyrównywane do punktów siatki dla bardziej precyzyjnego ułożenia.</li>
+                <li><strong>Obracanie kubeczków:</strong> kliknij na kubeczek, aby zmienić jego orientację (wierzchołkiem w górę lub w dół).</li>
+                <li><strong>Ochrona przed wyjściem poza planszę:</strong> system zapobiega przesunięciu kubeczków poza obszar planszy.</li>
             </ul>
-            <p><small>Funkcje testowe dostępne w konsoli: testPyramid(), testRectangle(), testRectangleWithGap()</small></p>
         </div>
     </div>
 

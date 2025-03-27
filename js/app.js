@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ROW_SPACING: 45, // Odstęp między rzędami dla trybu piramidy
         STACK_SPACING: 60, // Odstęp dla kubeczków ułożonych jeden na drugim
         showGrid: true, // Pokazuje siatkę dla lepszej orientacji
-        gridSpacing: 30  // Odległość między punktami siatki
+        gridSpacing: 30,  // Odległość między punktami siatki
+        snapToGridOnDragEnd: true // Nowa właściwość
     };
     
     // DOM elements
@@ -207,8 +208,33 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get click position
             const pos = stage.getPointerPosition();
             
-            // Dodajemy kubeczek na podstawie kliknięcia
-            placeCupBasedOnClickPosition(pos.x, pos.y);
+            // Sprawdź, czy kliknięcie nie zostało wykonane na istniejącym kubeczku
+            const clickedOnExistingCup = e.target !== background;
+            
+            // Dodajemy kubeczek tylko jeśli nie kliknięto na istniejący kubeczek
+            if (!clickedOnExistingCup) {
+                // Zamiast używać algorytmu automatycznego umieszczania,
+                // po prostu umieść kubeczek w miejscu kliknięcia
+                const x = pos.x;
+                const y = pos.y;
+                
+                // Przyciągnij do siatki, jeśli jest to włączone
+                let finalX = x;
+                let finalY = y;
+                
+                if (config.snapToGridOnDragEnd) {
+                    const snapped = snapToGrid(x, y);
+                    finalX = snapped.x;
+                    finalY = snapped.y;
+                }
+                
+                // Dodaj kubeczek, uwzględniając środek kubeczka
+                addCup(
+                    finalX - config.cupWidth / 2, 
+                    finalY - config.cupHeight / 2, 
+                    'down' // Domyślny kierunek kubeczka
+                );
+            }
         });
         
         gridLayer.draw();
@@ -640,24 +666,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Sprawdź, czy nie ma już kubeczka dokładnie w tej pozycji
-        const existingCup = config.cups.find(cup => {
-            const cupX = cup.cupImage.x() + config.cupWidth / 2;
-            const cupY = cup.cupImage.y() + config.cupHeight / 2;
-            
-            return Math.abs(cupX - finalX) < 5 && Math.abs(cupY - finalY) < 5;
-        });
+        // Dodaj kubeczek w określonej pozycji, z przesunięciem, by centrum kubeczka było w punkcie siatki
+        addCup(finalX - config.cupWidth / 2, finalY - config.cupHeight / 2, cupDirection);
         
-        if (existingCup) {
-            // Zmień kolor istniejącego kubeczka
-            updateCupColor(existingCup, config.selectedCupColor);
-        } else {
-            // Dodaj kubeczek w określonej pozycji, z przesunięciem, by centrum kubeczka było w punkcie siatki
-            addCup(finalX - config.cupWidth / 2, finalY - config.cupHeight / 2, cupDirection);
-            
-            // Opcjonalnie: Wyświetl informację o typie umieszczenia (pomocne w debugowaniu)
-            // console.log(`Umieszczono kubeczek w trybie: ${placementType}`);
-        }
+        // Opcjonalnie: Wyświetl informację o typie umieszczenia (pomocne w debugowaniu)
+        // console.log(`Umieszczono kubeczek w trybie: ${placementType}`);
     }
     
     /**
@@ -737,6 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
             y: y,
             width: config.cupWidth,
             height: config.cupHeight,
+            draggable: true, // Uczyń kubeczek przesuwalnym
         });
         
         // Załaduj obraz
@@ -757,6 +771,59 @@ document.addEventListener('DOMContentLoaded', function() {
             removeCup(this);
         });
         
+        // Dodaj event dla obracania kubeczków przy kliknięciu
+        cupImage.on('click', function(e) {
+            e.cancelBubble = true; // Zapobiega propagacji zdarzenia do stage
+            
+            // Znajdź obiekt kubeczka w tablicy config.cups
+            const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
+            if (cupIndex !== -1) {
+                rotateCup(config.cups[cupIndex]);
+            }
+        });
+        
+        // Obsługa przeciągania kubeczków
+        cupImage.on('dragstart', function() {
+            // Przenieś ten kubeczek na wierzch warstwy
+            this.moveToTop();
+            cupsLayer.draw();
+        });
+        
+        cupImage.on('dragmove', function() {
+            // Aktualizuj pozycję kubeczka bez sprawdzania kolizji podczas przeciągania
+            // dla płynniejszego doświadczenia
+        });
+        
+        cupImage.on('dragend', function() {
+            // Sprawdź, czy kubeczek nie wyszedł poza granice canvas
+            const x = this.x();
+            const y = this.y();
+            
+            if (x < 0) {
+                this.x(0);
+            } else if (x + config.cupWidth > config.stageWidth) {
+                this.x(config.stageWidth - config.cupWidth);
+            }
+            
+            if (y < 0) {
+                this.y(0);
+            } else if (y + config.cupHeight > config.stageHeight) {
+                this.y(config.stageHeight - config.cupHeight);
+            }
+            
+            // Opcjonalnie: przyciąganie do siatki po zakończeniu przeciągania
+            if (config.snapToGridOnDragEnd) {
+                const newPos = snapToGrid(
+                    this.x() + config.cupWidth / 2, 
+                    this.y() + config.cupHeight / 2
+                );
+                this.x(newPos.x - config.cupWidth / 2);
+                this.y(newPos.y - config.cupHeight / 2);
+            }
+            
+            cupsLayer.draw();
+        });
+        
         // Dodaj kubeczek do warstwy i tablicy kubeczków
         cupsLayer.add(cupImage);
         config.cups.push({
@@ -766,6 +833,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         cupsLayer.draw();
+    }
+    
+    /**
+     * Obraca kubeczek, zmieniając jego kierunek (up/down)
+     */
+    function rotateCup(cup) {
+        // Zmień kierunek kubeczka
+        const newDirection = cup.direction === 'up' ? 'down' : 'up';
+        cup.direction = newDirection;
+        cup.cupImage.direction = newDirection;
+        
+        // Załaduj nowy obraz dla kubeczka
+        const imageObj = new Image();
+        imageObj.onload = function() {
+            cup.cupImage.image(imageObj);
+            cupsLayer.draw();
+        };
+        imageObj.src = `images/${cup.color}_${newDirection}.svg`;
     }
     
     /**
@@ -928,6 +1013,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function bindEvents() {
         // Grid size change
         gridSizeSelector.addEventListener('change', updateGridSize);
+        
+        // Snap to grid toggle
+        const snapToGridCheckbox = document.getElementById('snap-to-grid');
+        if (snapToGridCheckbox) {
+            snapToGridCheckbox.addEventListener('change', function() {
+                config.snapToGridOnDragEnd = this.checked;
+            });
+        }
         
         // Clear button
         clearBtn.addEventListener('click', clearCups);
