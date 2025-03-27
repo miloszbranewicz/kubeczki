@@ -1097,8 +1097,12 @@ document.addEventListener('DOMContentLoaded', function() {
         config.showGrid = false;
         drawGrid();
         
-        // Get a data URL of the stage
-        const dataURL = stage.toDataURL({ pixelRatio: 2 });
+        // Get a data URL of the stage with higher resolution for better quality
+        const dataURL = stage.toDataURL({ 
+            pixelRatio: 3, // Higher resolution for better print quality
+            mimeType: 'image/png',
+            quality: 1
+        });
         
         // Restore grid visibility
         config.showGrid = showGridBackup;
@@ -1106,7 +1110,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create a PDF using jsPDF
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('landscape', 'mm', 'a4');
+        
+        // Create PDF in portrait orientation
+        const doc = new jsPDF('portrait', 'mm', 'a4');
+        
+        // Get page dimensions
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
         
         // Add title
         doc.setFontSize(20);
@@ -1117,27 +1127,32 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFontSize(10);
         doc.text(`Utworzono: ${today.toLocaleDateString()}`, 15, 22);
         
-        // Add design image
+        // Add design image - ensure it fits properly on the page
         const imgProps = doc.getImageProperties(dataURL);
-        const width = doc.internal.pageSize.getWidth() - 30;
-        const height = (imgProps.height * width) / imgProps.width;
+        const margin = 15; // margin on all sides
         
-        doc.addImage(dataURL, 'PNG', 15, 30, width, height);
+        // Calculate maximum dimensions that would fit on the page
+        const maxWidth = pageWidth - (margin * 2);
+        const maxHeight = pageHeight - 40; // Allow space for title only
         
-        // Add instructions
-        doc.setFontSize(12);
-        doc.text('Instrukcja budowy:', 15, height + 40);
+        // Calculate dimensions while preserving aspect ratio
+        let width, height;
         
-        doc.setFontSize(10);
-        let instructionY = height + 48;
+        if (imgProps.width / imgProps.height > maxWidth / maxHeight) {
+            // Image is wider than it is tall relative to available space
+            width = maxWidth;
+            height = (imgProps.height * width) / imgProps.width;
+        } else {
+            // Image is taller than it is wide relative to available space
+            height = maxHeight;
+            width = (imgProps.width * height) / imgProps.height;
+        }
         
-        doc.text('1. Zacznij od najniższej warstwy i buduj do góry.', 15, instructionY);
-        instructionY += 5;
-        doc.text('2. Kubeczki ustawiaj zgodnie z układem na obrazku.', 15, instructionY);
-        instructionY += 5;
-        doc.text('3. Możesz budować piramidy (kubeczek na dwóch niższych) lub stosy (kubeczek na kubeczku).', 15, instructionY);
-        instructionY += 5;
-        doc.text('4. Zwróć uwagę na kierunek kubeczków zgodnie z obrazkiem.', 15, instructionY);
+        // Center the image horizontally
+        const x = (pageWidth - width) / 2;
+        
+        // Add the image to the PDF
+        doc.addImage(dataURL, 'PNG', x, 30, width, height);
         
         // Save the PDF
         doc.save('konstrukcja-kubeczkow.pdf');
