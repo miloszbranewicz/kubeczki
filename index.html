@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <script src="js/utils.js"></script>
 </head>
 <body>
@@ -43,6 +44,7 @@
             <div class="actions">
                 <button id="clear-btn">Wyczyść</button>
                 <button id="export-btn">Eksportuj do PDF</button>
+                <button id="share-btn">Udostępnij</button>
             </div>
         </div>
 
@@ -67,20 +69,13 @@
                 <li>Użyj opcji "Przyciągaj do siatki", aby włączyć lub wyłączyć automatyczne wyrównywanie do siatki.</li>
                 <li>Użyj opcji "Pokaż siatkę", aby włączyć lub wyłączyć widoczność siatki.</li>
                 <li>Użyj przycisku "Eksportuj do PDF", aby zapisać swoją konstrukcję.</li>
+                <li>Użyj przycisku "Udostępnij", aby wygenerować link z aktualnym układem kubeczków.</li>
             </ol>
             <p>W aplikacji możesz budować różne typy konstrukcji:</p>
             <ul>
                 <li><strong>Dowolne konstrukcje:</strong> swobodnie umieszczaj i przesuwaj kubeczki w dowolne miejsce na planszy.</li>
                 <li><strong>Piramidy:</strong> układaj kubeczki jeden nad drugim w formie piramidy.</li>
                 <li><strong>Stosy:</strong> układaj kubeczki jeden na drugim.</li>
-            </ul>
-            <p>Dodatkowe funkcje:</p>
-            <ul>
-                <li><strong>Przeciąganie i upuszczanie:</strong> możesz swobodnie przesuwać kubeczki po planszy.</li>
-                <li><strong>Przyciąganie do siatki:</strong> kubeczki mogą być automatycznie wyrównywane do punktów siatki dla bardziej precyzyjnego ułożenia.</li>
-                <li><strong>Obracanie kubeczków:</strong> kliknij na kubeczek, aby zmienić jego orientację (wierzchołkiem w górę lub w dół).</li>
-                <li><strong>Ochrona przed wyjściem poza planszę:</strong> system zapobiega przesunięciu kubeczków poza obszar planszy.</li>
-                <li><strong>Widoczność siatki:</strong> możliwość włączenia lub wyłączenia siatki pomocniczej dla lepszej orientacji.</li>
             </ul>
         </div>
     </div>

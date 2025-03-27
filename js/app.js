@@ -1159,6 +1159,198 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
+     * Serializuje stan kubeczków do formatu URL-friendly
+     * @returns {string} Zakodowany stan kubeczków
+     */
+    function serializeCupsToUrl() {
+        // Przygotuj dane do serializacji w bardziej kompaktowej formie
+        const compactData = {
+            g: config.gridSize, // Skracamy nazwy kluczy dla mniejszego rozmiaru danych
+            c: config.cups.map(cup => [
+                Math.round(cup.cupImage.x()),
+                Math.round(cup.cupImage.y()),
+                cupColors.indexOf(cup.color), // Używamy indeksu koloru zamiast pełnej nazwy
+                cup.direction === 'up' ? 1 : 0 // Używamy 1 dla 'up', 0 dla 'down'
+            ])
+        };
+        
+        // Konwertuj dane na JSON
+        const jsonData = JSON.stringify(compactData);
+        
+        try {
+            // Kompresja danych za pomocą LZString
+            if (typeof LZString !== 'undefined') {
+                return 'lz_' + LZString.compressToEncodedURIComponent(jsonData);
+            } else {
+                // Fallback do Base64 jeśli LZString nie jest dostępne
+                return 'b64_' + encodeURIComponent(btoa(jsonData));
+            }
+        } catch (e) {
+            console.error('Błąd podczas kompresji danych:', e);
+            
+            // Jako fallback, używamy standardowej metody Base64
+            try {
+                return 'b64_' + encodeURIComponent(btoa(jsonData));
+            } catch (err) {
+                throw new Error('Układ jest zbyt duży do udostępnienia przez URL. Spróbuj zmniejszyć liczbę kubeczków.');
+            }
+        }
+    }
+    
+    /**
+     * Deserializuje stan kubeczków z zakodowanego stringa
+     * @param {string} encodedData - Zakodowany stan kubeczków
+     * @returns {boolean} - Czy operacja zakończyła się sukcesem
+     */
+    function deserializeCupsFromUrl(encodedData) {
+        try {
+            let jsonData;
+            
+            // Sprawdź, jaki format danych mamy
+            if (encodedData.startsWith('lz_')) {
+                // Dane skompresowane za pomocą LZString
+                const compressedData = encodedData.substring(3);
+                if (typeof LZString !== 'undefined') {
+                    jsonData = LZString.decompressFromEncodedURIComponent(compressedData);
+                } else {
+                    alert('Nie można odczytać udostępnionego układu. Brakuje biblioteki do dekompresji.');
+                    return false;
+                }
+            } else if (encodedData.startsWith('b64_')) {
+                // Dane zakodowane w Base64
+                const base64Data = encodedData.substring(4);
+                jsonData = atob(decodeURIComponent(base64Data));
+            } else if (encodedData.startsWith('layout_')) {
+                // Stary format z localStorage - podjęcie próby odczytu lokalnego
+                jsonData = localStorage.getItem(`cups_layout_${encodedData}`);
+                
+                if (!jsonData) {
+                    alert('Ten układ został udostępniony w starym formacie, który wymaga dostępu do danych zapisanych w przeglądarce osoby udostępniającej. Poproś o nowe udostępnienie układu.');
+                    return false;
+                }
+            } else {
+                // Stary format bezpośrednio w URL
+                jsonData = atob(decodeURIComponent(encodedData));
+            }
+            
+            // Parsuj dane JSON
+            const data = JSON.parse(jsonData);
+            
+            // Obsługa zarówno starego jak i nowego formatu danych
+            const gridSize = data.gridSize || data.g;
+            const cupsData = data.cups || data.c;
+            
+            // Ustaw rozmiar siatki
+            if (gridSize && gridSize !== config.gridSize) {
+                gridSizeSelector.value = gridSize;
+                updateGridSize();
+            }
+            
+            // Wyczyść istniejące kubeczki
+            clearCups();
+            
+            // Dodaj kubeczki na podstawie danych
+            if (cupsData && Array.isArray(cupsData)) {
+                cupsData.forEach(cupData => {
+                    // Obsługa zarówno starego jak i nowego formatu danych kubeczka
+                    let x, y, color, direction;
+                    
+                    if (Array.isArray(cupData)) {
+                        // Nowy format [x, y, colorIndex, directionBool]
+                        x = cupData[0];
+                        y = cupData[1];
+                        color = cupColors[cupData[2]] || cupColors[0];
+                        direction = cupData[3] === 1 ? 'up' : 'down';
+                    } else {
+                        // Stary format {x, y, color, direction}
+                        x = cupData.x;
+                        y = cupData.y;
+                        color = cupData.color;
+                        direction = cupData.direction;
+                    }
+                    
+                    // Ustaw aktualny kolor
+                    config.selectedCupColor = color;
+                    
+                    // Dodaj kubeczek
+                    addCup(x, y, direction);
+                });
+                
+                // Przywróć domyślny kolor
+                if (cupColors.length > 0) {
+                    config.selectedCupColor = cupColors[0];
+                    // Aktualizuj interfejs, zaznaczając pierwszy kolor
+                    document.querySelectorAll('.cup-option').forEach((el, index) => {
+                        el.classList.toggle('active', index === 0);
+                    });
+                }
+                
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Błąd podczas deserializacji danych:', error);
+            alert('Nie udało się załadować układu. Format danych może być nieprawidłowy.');
+            return false;
+        }
+    }
+    
+    /**
+     * Generuje link do udostępnienia aktualnego układu kubeczków
+     * @returns {string} - URL z zakodowanym stanem
+     */
+    function generateShareUrl() {
+        const baseUrl = window.location.href.split('?')[0];
+        
+        try {
+            const encodedData = serializeCupsToUrl();
+            return `${baseUrl}?cups=${encodedData}`;
+        } catch (error) {
+            alert(error.message);
+            return null;
+        }
+    }
+    
+    /**
+     * Kopiuje link do schowka i pokazuje powiadomienie
+     */
+    function shareCurrentLayout() {
+        if (config.cups.length === 0) {
+            alert('Twoja konstrukcja jest pusta! Dodaj kubeczki przed udostępnieniem.');
+            return;
+        }
+        
+        const shareUrl = generateShareUrl();
+        if (!shareUrl) return; // Błąd już obsłużony w generateShareUrl
+        
+        // Kopiuj do schowka
+        navigator.clipboard.writeText(shareUrl)
+            .then(() => {
+                alert('Link został skopiowany do schowka!\nMożesz go teraz udostępnić.');
+            })
+            .catch(err => {
+                console.error('Nie udało się skopiować linku:', err);
+                alert('Nie udało się skopiować linku do schowka. Link to: ' + shareUrl);
+            });
+    }
+    
+    /**
+     * Sprawdza, czy URL zawiera zakodowany stan kubeczków i ładuje go
+     */
+    function loadFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const encodedData = urlParams.get('cups');
+        
+        if (encodedData) {
+            const success = deserializeCupsFromUrl(encodedData);
+            if (!success) {
+                console.error('Nie udało się załadować układu z URL.');
+            }
+        }
+    }
+    
+    /**
      * Bind event listeners to DOM elements
      */
     function bindEvents() {
@@ -1187,6 +1379,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Export button
         exportBtn.addEventListener('click', exportToPDF);
+        
+        // Share button
+        const shareBtn = document.getElementById('share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', shareCurrentLayout);
+        }
+        
+        // Załaduj dane z URL przy inicjalizacji
+        loadFromUrl();
         
         // Window resize
         window.addEventListener('resize', function() {
