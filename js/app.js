@@ -255,11 +255,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Check if the position is clear of other cups
                 if (isPositionClear(centerX, centerY)) {
-                    addCup(
-                        finalX - config.cupWidth / 2, 
-                        finalY - config.cupHeight / 2, 
-                        'down' // Domyślny kierunek kubeczka
-                    );
+                    // Określ odpowiedni kierunek kubeczka na podstawie wsparcia
+                    const support = findSupportForCup(centerX, centerY);
+                    let direction = 'down'; // Domyślny kierunek kubeczka
+                    
+                    // Jeśli kubeczek stoi na jednym innym kubeczku, odwróć go względem tego pod spodem
+                    if (support.type === 'single') {
+                        direction = support.cups[0].direction === 'up' ? 'down' : 'up';
+                    }
+                    
+                    // Sprawdź, czy umieszczenie kubeczka z określonym kierunkiem jest zgodne z prawami fizyki
+                    const physicalCheck = isPhysicallyValid(centerX, centerY, direction);
+                    
+                    if (physicalCheck.isValid) {
+                        addCup(
+                            finalX - config.cupWidth / 2, 
+                            finalY - config.cupHeight / 2, 
+                            direction
+                        );
+                    } else {
+                        console.log("Nie można umieścić kubeczka - niezgodne z prawami fizyki: " + physicalCheck.message);
+                        showTemporaryMessage(physicalCheck.message, finalX, finalY - 30);
+                    }
                 } else {
                     console.log("Nie można umieścić kubeczka - pozycja zajęta przez inny kubeczek");
                     showTemporaryMessage('Nie można umieścić kubeczka na innym kubeczku', finalX, finalY - 30);
@@ -306,6 +323,168 @@ document.addEventListener('DOMContentLoaded', function() {
             // Jeśli kwadrat odległości jest mniejszy niż minimalny, kubeczki nachodziłyby na siebie
             return distanceSquared < minDistanceSquared;
         });
+    }
+    
+    /**
+     * Sprawdza, czy umieszczenie kubeczka jest zgodne z prawami fizyki
+     * @param {number} x - Pozycja X środka kubeczka
+     * @param {number} y - Pozycja Y środka kubeczka
+     * @param {string} direction - Kierunek kubeczka ('up' lub 'down')
+     * @returns {{isValid: boolean, message: string}} - Obiekt określający czy umieszczenie jest prawidłowe oraz komunikat
+     */
+    function isPhysicallyValid(x, y, direction) {
+        // Kubeczki na samym dole (najniższa warstwa) zawsze są prawidłowe
+        const lowestCupY = findLowestCupY();
+        
+        // Tolerancja dla porównań pozycji Y (aby uwzględnić drobne różnice w pozycjonowaniu)
+        const yTolerance = 10;
+        
+        // Jeśli jest to pierwsza warstwa lub kubeczek jest na najniższej warstwie
+        if (config.cups.length === 0 || Math.abs(y - lowestCupY) <= yTolerance) {
+            return { isValid: true, message: "" };
+        }
+        
+        // Sprawdź, czy kubeczek ma odpowiednie wsparcie
+        const support = findSupportForCup(x, y);
+        
+        // Przypadek 1: Kubeczek stoi na jednym kubeczku
+        if (support.type === 'single') {
+            // Kubeczek musi być odwrócony w stosunku do kubeczka pod nim
+            const shouldBeDirection = support.cups[0].direction === 'up' ? 'down' : 'up';
+            
+            if (direction !== shouldBeDirection) {
+                return { 
+                    isValid: false, 
+                    message: `Kubeczek stojący na innym musi być odwrócony (${shouldBeDirection === 'up' ? 'do góry' : 'do dołu'})` 
+                };
+            }
+            return { isValid: true, message: "" };
+        }
+        
+        // Przypadek 2: Kubeczek jest wspierany przez dwa kubeczki
+        else if (support.type === 'double') {
+            // Sprawdź, czy kubeczek nie jest umieszczony szerzej niż warstwa pod nim
+            if (!isWithinSupportWidth(x, support.cups)) {
+                return { 
+                    isValid: false, 
+                    message: "Kubeczek nie może wystawać poza kubeczki, na których stoi" 
+                };
+            }
+            
+            // Dla podwójnego wsparcia, kierunek nie jest ograniczony
+            return { isValid: true, message: "" };
+        }
+        
+        // Przypadek 3: Brak wsparcia - kubeczek jest w powietrzu
+        return { 
+            isValid: false, 
+            message: "Kubeczek musi stać na innym kubeczku lub mieć dwa kubeczki jako wsparcie" 
+        };
+    }
+    
+    /**
+     * Znajduje najniższą wartość Y dla istniejących kubeczków (najniższa warstwa)
+     * @returns {number} - Najniższa wartość Y kubeczków lub -1 jeśli nie ma kubeczków
+     */
+    function findLowestCupY() {
+        if (config.cups.length === 0) return -1;
+        
+        return Math.max(...config.cups.map(cup => cup.cupImage.y() + config.cupHeight / 2));
+    }
+    
+    /**
+     * Znajduje kubeczki wspierające pod wskazaną pozycją
+     * @param {number} x - Pozycja X środka kubeczka
+     * @param {number} y - Pozycja Y środka kubeczka
+     * @returns {{type: string, cups: Array}} - Typ wsparcia ('none', 'single', 'double') i kubeczki wspierające
+     */
+    function findSupportForCup(x, y) {
+        // Tolerancja dla porównań pozycji
+        const yTolerance = 15;  // Tolerancja odległości w pionie
+        const xTolerance = config.cupWidth;  // Tolerancja odległości w poziomie dla podwójnego wsparcia
+        
+        // Znajdź kubeczki pod umieszczanym kubeczkiem (w odległości około jednego kubeczka w pionie)
+        const potentialSupports = config.cups.filter(cup => {
+            const cupX = cup.cupImage.x() + config.cupWidth / 2;
+            const cupY = cup.cupImage.y() + config.cupHeight / 2;
+            
+            // Sprawdź, czy kubeczek jest bezpośrednio pod umieszczanym kubeczkiem
+            const isBelow = cupY > y && Math.abs(cupY - y) <= config.ROW_SPACING + yTolerance;
+            
+            // Sprawdź, czy kubeczek jest w odpowiedniej odległości w poziomie
+            const isWithinRange = Math.abs(cupX - x) <= xTolerance;
+            
+            return isBelow && isWithinRange;
+        });
+        
+        if (potentialSupports.length === 0) {
+            return { type: 'none', cups: [] };
+        }
+        
+        // Sprawdź czy to wsparcie pojedyncze (jeden kubeczek bezpośrednio pod)
+        const directlyBelow = potentialSupports.find(cup => {
+            const cupX = cup.cupImage.x() + config.cupWidth / 2;
+            return Math.abs(cupX - x) <= config.cupWidth / 3;
+        });
+        
+        if (directlyBelow) {
+            return { type: 'single', cups: [directlyBelow] };
+        }
+        
+        // Sprawdź czy można znaleźć dwa kubeczki jako wsparcie
+        if (potentialSupports.length >= 2) {
+            // Posortuj kubeczki od lewej do prawej
+            const sortedSupports = [...potentialSupports].sort((a, b) => {
+                const aX = a.cupImage.x() + config.cupWidth / 2;
+                const bX = b.cupImage.x() + config.cupWidth / 2;
+                return aX - bX;
+            });
+            
+            // Znajdź dwa kubeczki, które mogą stanowić wsparcie (po lewej i prawej stronie od punktu x)
+            let leftSupport = null;
+            let rightSupport = null;
+            
+            for (const cup of sortedSupports) {
+                const cupX = cup.cupImage.x() + config.cupWidth / 2;
+                
+                if (cupX < x && (!leftSupport || cupX > leftSupport.cupImage.x() + config.cupWidth / 2)) {
+                    leftSupport = cup;
+                } else if (cupX > x && (!rightSupport || cupX < rightSupport.cupImage.x() + config.cupWidth / 2)) {
+                    rightSupport = cup;
+                }
+            }
+            
+            // Jeśli znaleziono kubeczki po obu stronach i są odpowiednio blisko siebie
+            if (leftSupport && rightSupport) {
+                const leftX = leftSupport.cupImage.x() + config.cupWidth / 2;
+                const rightX = rightSupport.cupImage.x() + config.cupWidth / 2;
+                
+                // Sprawdź czy kubeczki są odpowiednio blisko siebie (nie więcej niż 2x szerokość kubeczka)
+                if (rightX - leftX <= config.cupWidth * 2) {
+                    return { type: 'double', cups: [leftSupport, rightSupport] };
+                }
+            }
+        }
+        
+        return { type: 'none', cups: [] };
+    }
+    
+    /**
+     * Sprawdza, czy kubeczek jest umieszczony w obrębie szerokości kubeczków wspierających
+     * @param {number} x - Pozycja X środka kubeczka
+     * @param {Array} supportCups - Kubeczki wspierające
+     * @returns {boolean} - true jeśli kubeczek jest w obrębie wsparcia
+     */
+    function isWithinSupportWidth(x, supportCups) {
+        if (supportCups.length < 2) return false;
+        
+        // Znajdź lewy i prawy brzeg obszaru wsparcia
+        const supportX = supportCups.map(cup => cup.cupImage.x() + config.cupWidth / 2);
+        const leftEdge = Math.min(...supportX) - config.cupWidth / 4;
+        const rightEdge = Math.max(...supportX) + config.cupWidth / 4;
+        
+        // Kubeczek nie powinien wystawać poza obszar wsparcia
+        return x >= leftEdge && x <= rightEdge;
     }
     
     /**
@@ -923,6 +1102,58 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if position is clear of other cups
             let positionClear = isPositionClear(centerX, centerY);
             
+            // Jeśli pozycja jest wolna, określ odpowiedni kierunek kubeczka na podstawie wsparcia
+            if (positionClear && currentCup) {
+                // Sprawdź wsparcie pod kubeczkiem
+                const support = findSupportForCup(centerX, centerY);
+                
+                // Jeśli kubeczek stoi na jednym innym kubeczku, odwróć go względem tego pod spodem
+                if (support.type === 'single') {
+                    const newDirection = support.cups[0].direction === 'up' ? 'down' : 'up';
+                    
+                    // Jeśli kierunek się zmienił, załaduj odpowiedni obraz
+                    if (newDirection !== currentCup.direction) {
+                        currentCup.direction = newDirection;
+                        
+                        // Załaduj nowy obraz dla kubeczka
+                        const imageObj = new Image();
+                        imageObj.onload = function() {
+                            currentCup.cupImage.image(imageObj);
+                            cupsLayer.draw();
+                        };
+                        imageObj.src = `images/${currentCup.color}_${newDirection}.svg`;
+                    }
+                }
+                
+                // Sprawdź, czy przesunięcie jest zgodne z prawami fizyki
+                const physicalCheck = isPhysicallyValid(centerX, centerY, currentCup.direction);
+                positionClear = positionClear && physicalCheck.isValid;
+                
+                // Jeśli nie jest zgodne z fizyką, ale być może przy innym kierunku byłoby OK
+                if (!physicalCheck.isValid && support.type === 'single') {
+                    // Spróbuj z przeciwnym kierunkiem
+                    const alternateDirection = currentCup.direction === 'up' ? 'down' : 'up';
+                    const alternateCheck = isPhysicallyValid(centerX, centerY, alternateDirection);
+                    
+                    if (alternateCheck.isValid) {
+                        // Użyj alternatywnego kierunku
+                        currentCup.direction = alternateDirection;
+                        positionClear = true;
+                        
+                        // Załaduj nowy obraz dla kubeczka
+                        const imageObj = new Image();
+                        imageObj.onload = function() {
+                            currentCup.cupImage.image(imageObj);
+                            cupsLayer.draw();
+                        };
+                        imageObj.src = `images/${currentCup.color}_${alternateDirection}.svg`;
+                    } else {
+                        // Zachowaj oryginalny komunikat
+                        physicalCheck.message = physicalCheck.message;
+                    }
+                }
+            }
+            
             // If the snapped position has a collision, try to find a nearby free position
             if (!positionClear && snappedPosition) {
                 const freePosition = findNearestFreePosition(centerX, centerY);
@@ -930,7 +1161,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (freePosition) {
                     finalX = freePosition.x - config.cupWidth / 2;
                     finalY = freePosition.y - config.cupHeight / 2;
-                    positionClear = true;
+                    
+                    // Sprawdź ponownie, czy nowa pozycja jest zgodna z prawami fizyki
+                    if (currentCup) {
+                        const support = findSupportForCup(freePosition.x, freePosition.y);
+                        
+                        // Jeśli kubeczek stoi na jednym innym kubeczku, odwróć go względem tego pod spodem
+                        if (support.type === 'single') {
+                            const newDirection = support.cups[0].direction === 'up' ? 'down' : 'up';
+                            
+                            // Jeśli kierunek się zmienił, załaduj odpowiedni obraz
+                            if (newDirection !== currentCup.direction) {
+                                currentCup.direction = newDirection;
+                                
+                                // Załaduj nowy obraz dla kubeczka
+                                const imageObj = new Image();
+                                imageObj.onload = function() {
+                                    currentCup.cupImage.image(imageObj);
+                                    cupsLayer.draw();
+                                };
+                                imageObj.src = `images/${currentCup.color}_${newDirection}.svg`;
+                            }
+                        }
+                        
+                        const physicalCheck = isPhysicallyValid(freePosition.x, freePosition.y, currentCup.direction);
+                        positionClear = isPositionClear(freePosition.x, freePosition.y) && physicalCheck.isValid;
+                        
+                        // Jeśli nie jest zgodne z fizyką, ale być może przy innym kierunku byłoby OK
+                        if (!physicalCheck.isValid && support.type === 'single') {
+                            // Spróbuj z przeciwnym kierunkiem
+                            const alternateDirection = currentCup.direction === 'up' ? 'down' : 'up';
+                            const alternateCheck = isPhysicallyValid(freePosition.x, freePosition.y, alternateDirection);
+                            
+                            if (alternateCheck.isValid) {
+                                // Użyj alternatywnego kierunku
+                                currentCup.direction = alternateDirection;
+                                positionClear = true;
+                                
+                                // Załaduj nowy obraz dla kubeczka
+                                const imageObj = new Image();
+                                imageObj.onload = function() {
+                                    currentCup.cupImage.image(imageObj);
+                                    cupsLayer.draw();
+                                };
+                                imageObj.src = `images/${currentCup.color}_${alternateDirection}.svg`;
+                            }
+                        }
+                    } else {
+                        positionClear = isPositionClear(freePosition.x, freePosition.y);
+                    }
                 }
             }
             
@@ -939,10 +1218,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 config.cups.push(currentCup);
             }
             
-            // If there is still a collision, revert to previous position
+            // If there is still a collision or it's physically invalid, revert to previous position
             if (!positionClear) {
                 finalX = originalPos.x;
                 finalY = originalPos.y;
+                
+                // Pokaż komunikat o błędzie
+                if (currentCup && !isPhysicallyValid(centerX, centerY, currentCup.direction).isValid) {
+                    showTemporaryMessage(isPhysicallyValid(centerX, centerY, currentCup.direction).message, centerX, centerY - 30);
+                } else {
+                    showTemporaryMessage('Nie można umieścić kubeczka na innym kubeczku', centerX, centerY - 30);
+                }
             }
             
             this.position({
@@ -975,8 +1261,23 @@ document.addEventListener('DOMContentLoaded', function() {
      * Obraca kubeczek, zmieniając jego kierunek (up/down)
      */
     function rotateCup(cup) {
-        // Zmień kierunek kubeczka
+        // Pobierz aktualną pozycję kubeczka
+        const centerX = cup.cupImage.x() + config.cupWidth / 2;
+        const centerY = cup.cupImage.y() + config.cupHeight / 2;
+        
+        // Nowy kierunek kubeczka
         const newDirection = cup.direction === 'up' ? 'down' : 'up';
+        
+        // Sprawdź, czy obrót jest zgodny z prawami fizyki
+        const physicalCheck = isPhysicallyValid(centerX, centerY, newDirection);
+        
+        if (!physicalCheck.isValid) {
+            console.log("Nie można obrócić kubeczka - niezgodne z prawami fizyki: " + physicalCheck.message);
+            showTemporaryMessage(physicalCheck.message, centerX, centerY - 30);
+            return;
+        }
+        
+        // Zmień kierunek kubeczka
         cup.direction = newDirection;
         cup.cupImage.direction = newDirection;
         
