@@ -164,12 +164,15 @@ h1 {
     cursor: grabbing;
 }
 
+
 .instructions {
     padding: 15px;
     background-color: #f1f1f1;
     border-radius: 5px;
 }
-
+.instructions p {
+    margin-top: 1rem;
+}
 .instructions h3 {
     margin-bottom: 10px;
 }
