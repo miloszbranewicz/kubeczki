@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
         'rozowy', 'szary', 'fioletowy', 'niebieski', 'czarny', 'bialy'
     ];
     
+    // Device detection
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
     // Configuration
     const config = {
         cupWidth: 60,
@@ -19,7 +23,12 @@ document.addEventListener('DOMContentLoaded', function() {
         STACK_SPACING: 60, // Odstęp dla kubeczków ułożonych jeden na drugim
         showGrid: true, // Czy pokazywać siatkę pomocniczą
         gridSpacing: 30,  // Odległość między punktami siatki
-        snapToGridOnDragEnd: true // Czy przyciągać do siatki
+        snapToGridOnDragEnd: true, // Czy przyciągać do siatki
+        isMobile: isMobile, // Czy urządzenie jest mobilne
+        isTouchDevice: isTouchDevice, // Czy urządzenie ma ekran dotykowy
+        longPressThreshold: 500, // Czas w ms po którym długie przytrzymanie jest uznawane za kliknięcie prawym
+        doubleTapThreshold: 300, // Czas w ms pomiędzy dwoma tapnięciami aby zostały uznane za double-tap
+        lastTapTime: 0 // Czas ostatniego tapnięcia (do wykrywania double-tap)
     };
     
     // DOM elements
@@ -36,12 +45,36 @@ document.addEventListener('DOMContentLoaded', function() {
         config.stageHeight = config.stageWidth;
     }
     
+    // For mobile devices, use smaller cup sizes and adjust spacing
+    if (config.isMobile) {
+        const scaleFactor = containerWidth < 400 ? 0.8 : 0.9;
+        config.cupWidth *= scaleFactor;
+        config.cupHeight *= scaleFactor;
+        config.ROW_SPACING = Math.round(config.ROW_SPACING * scaleFactor);
+        config.STACK_SPACING = Math.round(config.STACK_SPACING * scaleFactor);
+    }
+    
     // Initialize Konva stage
     const stage = new Konva.Stage({
         container: 'canvas',
         width: config.stageWidth,
         height: config.stageHeight
     });
+    
+    // Touch optimization for mobile devices
+    if (config.isTouchDevice) {
+        // Prevent default touch behaviors
+        const canvasEl = document.getElementById('canvas');
+        canvasEl.addEventListener('touchstart', function(e) {
+            if (e.target === canvasEl || e.target.tagName === 'CANVAS') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Set Konva drag settings for better touch handling
+        Konva.dragButtons = [0, 1]; // Allow both left and right mouse buttons for drag
+        Konva.hitOnDragEnabled = true; // Improve drag-and-drop performance
+    }
     
     // Create layers
     const gridLayer = new Konva.Layer();
@@ -191,13 +224,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 gridLayer.add(line);
             }
             
-            // Draw grid intersection points
-            for (let i = 0; i <= numLinesH; i++) {
-                for (let j = 0; j <= numLinesV; j++) {
+            // Draw grid intersection points - skip some points on mobile to improve performance
+            const skipFactor = config.isMobile ? 2 : 1;
+            for (let i = 0; i <= numLinesH; i += skipFactor) {
+                for (let j = 0; j <= numLinesV; j += skipFactor) {
                     const circle = new Konva.Circle({
                         x: j * gridSpacing,
                         y: i * gridSpacing,
-                        radius: 1,
+                        radius: config.isMobile ? 0.8 : 1,
                         fill: '#dddddd',
                     });
                     gridLayer.add(circle);
@@ -283,6 +317,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Add touch handler for mobile devices
+        if (config.isTouchDevice) {
+            background.on('touchstart', function(e) {
+                // Prevent scrolling when touching the canvas
+                if (e.target === background) {
+                    e.evt.preventDefault();
+                }
+            });
+            
+            background.on('tap', function(e) {
+                // Forward tap event to click event
+                if (e.target === background) {
+                    background.fire('click', { 
+                        target: background, 
+                        evt: e.evt 
+                    }, true);
+                }
+            });
+        }
         
         gridLayer.draw();
     }
@@ -954,22 +1008,77 @@ document.addEventListener('DOMContentLoaded', function() {
         cupImage.direction = direction;
         cupImage.color = config.selectedCupColor;
         
+        // Zmienne do śledzenia długiego przytrzymania na urządzeniach mobilnych
+        let longPressTimer;
+        let hasMoved = false;
+        let lastTapTime = 0;
+        
         // Dodaj event dla usuwania kubeczków prawym przyciskiem myszy
         cupImage.on('contextmenu', function(e) {
             e.evt.preventDefault();
             removeCup(this);
         });
         
-        // Dodaj event dla obracania kubeczków przy kliknięciu
-        cupImage.on('click', function(e) {
-            e.cancelBubble = true; // Zapobiega propagacji zdarzenia do stage
+        // Specjalne obsługiwanie dotknięć na urządzeniach mobilnych
+        if (config.isTouchDevice) {
+            // Rozpoczęcie dotyku - potencjalnie długie przytrzymanie
+            cupImage.on('touchstart', function(e) {
+                // Anuluj bieżące odliczanie (jeśli istnieje)
+                if (longPressTimer) clearTimeout(longPressTimer);
+                
+                hasMoved = false;
+                
+                // Rozpocznij nowe odliczanie
+                longPressTimer = setTimeout(() => {
+                    if (!hasMoved) {
+                        removeCup(this); // Usuń kubeczek przy długim przytrzymaniu
+                        
+                        // Wibracja jako potwierdzenie (jeśli dostępne)
+                        if (navigator.vibrate) {
+                            navigator.vibrate(100);
+                        }
+                    }
+                }, config.longPressThreshold);
+            });
             
-            // Znajdź obiekt kubeczka w tablicy config.cups
-            const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
-            if (cupIndex !== -1) {
-                rotateCup(config.cups[cupIndex]);
-            }
-        });
+            // Ruch podczas dotyku
+            cupImage.on('touchmove', function() {
+                hasMoved = true;
+                if (longPressTimer) clearTimeout(longPressTimer);
+            });
+            
+            // Zakończenie dotyku
+            cupImage.on('touchend', function(e) {
+                if (longPressTimer) clearTimeout(longPressTimer);
+                
+                // Sprawdź czy to double-tap (do obracania kubeczka)
+                const now = Date.now();
+                if (now - config.lastTapTime < config.doubleTapThreshold && !hasMoved) {
+                    e.cancelBubble = true;
+                    
+                    // Znajdź obiekt kubeczka w tablicy config.cups
+                    const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
+                    if (cupIndex !== -1) {
+                        rotateCup(config.cups[cupIndex]);
+                    }
+                }
+                config.lastTapTime = now;
+            });
+        }
+        
+        // Dodaj event dla obracania kubeczków przy kliknięciu
+        // Tylko dla urządzeń niemobilnych (na mobilnych używamy double-tap)
+        if (!config.isTouchDevice) {
+            cupImage.on('click', function(e) {
+                e.cancelBubble = true; // Zapobiega propagacji zdarzenia do stage
+                
+                // Znajdź obiekt kubeczka w tablicy config.cups
+                const cupIndex = config.cups.findIndex(cup => cup.cupImage === this);
+                if (cupIndex !== -1) {
+                    rotateCup(config.cups[cupIndex]);
+                }
+            });
+        }
         
         // Obsługa przeciągania kubeczków
         cupImage.on('dragstart', function() {
@@ -1705,37 +1814,81 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Window resize
         window.addEventListener('resize', function() {
-            // Dostosuj rozmiar canvas do rozmiaru siatki i dostępnej przestrzeni
-            const maxWidth = canvasContainer.clientWidth - 20;
-            const desiredCellSize = 60; // Optymalny rozmiar komórki
-            const desiredCanvasSize = config.gridSize * desiredCellSize;
+            // Użyj debouncing aby uniknąć zbyt częstych wywołań podczas zmiany rozmiaru
+            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
             
-            // Oblicz najlepszy rozmiar canvas, nie przekraczając dostępnej szerokości
-            let newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
-            
-            // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
-            let cellSize = window.pyramidUtils.calculateCellSize(newCanvasSize, config.gridSize);
-            
-            // Oblicz odstęp siatki na podstawie szerokości kubeczka
-            config.gridSpacing = cellSize / 2;
-            
-            // Upewnij się, że canvas ma rozmiar, który jest wielokrotnością odstępu siatki
-            // dzięki temu grid będzie zawsze kończył się dokładnie na krawędzi canvas
-            const gridCellCount = Math.floor(newCanvasSize / config.gridSpacing);
-            newCanvasSize = gridCellCount * config.gridSpacing;
-            
-            // Zaktualizuj rozmiary
-            config.stageWidth = newCanvasSize;
-            config.stageHeight = newCanvasSize;
-            config.cupWidth = cellSize;
-            config.cupHeight = cellSize;
-            
-            // Aktualizuj rozmiar stage
-            stage.width(config.stageWidth);
-            stage.height(config.stageHeight);
-            
-            drawGrid();
+            this.resizeTimeout = setTimeout(() => {
+                // Dostosuj rozmiar canvas do rozmiaru siatki i dostępnej przestrzeni
+                const maxWidth = canvasContainer.clientWidth - 20;
+                const desiredCellSize = config.isMobile ? 50 : 60; // Mniejszy rozmiar komórki dla urządzeń mobilnych
+                const desiredCanvasSize = config.gridSize * desiredCellSize;
+                
+                // Oblicz najlepszy rozmiar canvas, nie przekraczając dostępnej szerokości
+                let newCanvasSize = Math.min(desiredCanvasSize, maxWidth);
+                
+                // Oblicz rozmiar komórki na podstawie nowego rozmiaru canvas
+                let cellSize = window.pyramidUtils.calculateCellSize(newCanvasSize, config.gridSize);
+                
+                // Dostosuj rozmiar komórki dla urządzeń mobilnych w orientacji pionowej
+                if (config.isMobile && window.innerHeight > window.innerWidth) {
+                    // W orientacji pionowej na urządzeniach mobilnych zmniejsz rozmiar komórki
+                    cellSize = Math.max(cellSize * 0.9, 20);
+                }
+                
+                // Oblicz odstęp siatki na podstawie szerokości kubeczka
+                config.gridSpacing = cellSize / 2;
+                
+                // Upewnij się, że canvas ma rozmiar, który jest wielokrotnością odstępu siatki
+                const gridCellCount = Math.floor(newCanvasSize / config.gridSpacing);
+                newCanvasSize = gridCellCount * config.gridSpacing;
+                
+                // Zaktualizuj rozmiary
+                config.stageWidth = newCanvasSize;
+                config.stageHeight = newCanvasSize;
+                
+                // Zachowaj proporcje kubeczków przy zmianie rozmiaru
+                const oldCupWidth = config.cupWidth;
+                config.cupWidth = cellSize;
+                config.cupHeight = cellSize;
+                
+                // Ustaw nową szerokość i wysokość wszystkich kubeczków
+                if (oldCupWidth !== config.cupWidth) {
+                    const scaleFactor = config.cupWidth / oldCupWidth;
+                    
+                    config.cups.forEach(cup => {
+                        // Skaluj pozycję kubeczka
+                        const centerX = cup.cupImage.x() + oldCupWidth / 2;
+                        const centerY = cup.cupImage.y() + oldCupWidth / 2;
+                        
+                        const newX = centerX * scaleFactor - config.cupWidth / 2;
+                        const newY = centerY * scaleFactor - config.cupHeight / 2;
+                        
+                        cup.cupImage.width(config.cupWidth);
+                        cup.cupImage.height(config.cupHeight);
+                        cup.cupImage.x(newX);
+                        cup.cupImage.y(newY);
+                    });
+                }
+                
+                // Aktualizuj rozmiar stage
+                stage.width(config.stageWidth);
+                stage.height(config.stageHeight);
+                
+                // Odrysuj siatkę i kubeczki
+                drawGrid();
+                cupsLayer.draw();
+            }, 250); // Odczekaj 250ms po ostatniej zmianie rozmiaru
         });
+        
+        // Specjalne zdarzenie dla orientacji urządzeń mobilnych
+        if (config.isMobile) {
+            window.addEventListener('orientationchange', function() {
+                // Wywołaj resize po krótkiej chwili, aby przeglądarka miała czas na dostosowanie wymiarów
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
+            });
+        }
     }
     
     /**
@@ -1755,35 +1908,84 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update the timestamp
         lastMessageTimestamp = now;
         
-        // Create text node
+        // Adjust position for mobile - make sure message is visible
+        if (config.isMobile) {
+            // Ensure message stays within the visible canvas
+            const textWidth = message.length * 7; // Przybliżona szerokość tekstu
+            
+            if (x < textWidth/2) {
+                x = textWidth/2 + 5;
+            } else if (x > config.stageWidth - textWidth/2) {
+                x = config.stageWidth - textWidth/2 - 5;
+            }
+            
+            // Make sure message is not too close to the top
+            if (y < 40) {
+                y = 40;
+            }
+        }
+        
+        // Create text node with better visibility for mobile
         const text = new Konva.Text({
             x: x,
             y: y,
             text: message,
-            fontSize: 14,
+            fontSize: config.isMobile ? 16 : 14,
             fontFamily: 'Arial',
             fill: '#d22',
-            padding: 10,
+            padding: config.isMobile ? 12 : 10,
+            opacity: 1,
+            align: 'center',
+            verticalAlign: 'middle'
+        });
+        
+        // Center the text at the provided position
+        text.offsetX(text.width() / 2);
+        
+        // Add background for better readability
+        const textBg = new Konva.Rect({
+            x: text.x() - text.width() / 2,
+            y: text.y(),
+            width: text.width(),
+            height: text.height(),
+            fill: 'rgba(255, 255, 255, 0.9)',
+            cornerRadius: 5,
+            stroke: '#d22',
+            strokeWidth: 1,
             opacity: 1
         });
         
         // Add to grid layer so it's on top
+        gridLayer.add(textBg);
         gridLayer.add(text);
         gridLayer.batchDraw();
         
         // Fade out and remove
         const tween = new Konva.Tween({
             node: text,
-            duration: 0.75,
+            duration: config.isMobile ? 1.5 : 0.75,
             opacity: 0,
             onFinish: () => {
                 text.destroy();
+                textBg.destroy();
                 gridLayer.batchDraw();
             }
         });
         
+        const tweenBg = new Konva.Tween({
+            node: textBg,
+            duration: config.isMobile ? 1.5 : 0.75,
+            opacity: 0,
+        });
+        
         // Start the animation
         tween.play();
+        tweenBg.play();
+        
+        // Vibrate for mobile as additional feedback
+        if (config.isMobile && navigator.vibrate) {
+            navigator.vibrate(50);
+        }
         
         return true; // Message was displayed
     }

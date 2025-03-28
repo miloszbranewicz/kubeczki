@@ -186,9 +186,23 @@ h1 {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+    
     .controls {
         flex-direction: column;
         gap: 15px;
+        padding: 10px;
     }
     
     .size-selector, .grid-options {
@@ -196,18 +210,118 @@ h1 {
         margin-bottom: 10px;
     }
     
+    .size-selector label {
+        font-size: 14px;
+    }
+    
     .actions {
         display: flex;
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .actions button {
+        padding: 8px 10px;
+        margin-left: 0;
+        font-size: 14px;
+        flex: 1;
+        min-width: 90px;
+        text-align: center;
     }
     
     .cups-toolbar {
+        padding: 10px;
+        margin-bottom: 15px;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .cups-toolbar h3 {
+        font-size: 1rem;
     }
     
     #cups-selection {
         justify-content: flex-start;
         min-width: max-content;
+        padding-bottom: 5px;
+    }
+    
+    .cup-option {
+        width: 50px;
+        height: 50px;
+    }
+    
+    #canvas-container {
+        padding: 5px;
+        margin-bottom: 15px;
+        touch-action: none;
+    }
+    
+    .instructions {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .instructions h3 {
+        font-size: 1rem;
+    }
+    
+    .instructions ol,
+    .instructions ul {
+        padding-left: 20px;
+    }
+    
+    .instructions li {
+        margin-bottom: 8px;
+    }
+}
+
+/* Additional styles for very small screens */
+@media (max-width: 480px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        padding: 8px;
+        border-radius: 5px;
+    }
+    
+    h1 {
+        font-size: 1.3rem;
+    }
+    
+    .actions button {
+        padding: 6px 8px;
+        font-size: 13px;
+        min-width: 0;
+    }
+    
+    .cup-option {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .cup-option {
+        padding: 8px;
+    }
+    
+    .cup-option.active {
+        border-width: 3px;
+    }
+    
+    .actions button {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    
+    input[type="checkbox"] {
+        transform: scale(1.2);
+        margin-right: 8px;
     }
 } 
