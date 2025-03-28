@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Konstrukcji z Kubeczków</title>
+    <title>Wieże online</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -12,18 +12,19 @@
 </head>
 <body>
     <div class="container">
-        <h1>Generator Konstrukcji z Kubeczków</h1>
+        <h1>Wieże online</h1>
         
         <div class="controls">
             <div class="size-selector">
                 <label for="grid-size">Rozmiar siatki:</label>
                 <select id="grid-size">
+                    <option value="4">4x4</option>
+                    <option value="6" selected>6x6</option>
+                    <option value="8">8x8</option>
                     <option value="10">10x10</option>
                     <option value="12">12x12</option>
                     <option value="14">14x14</option>
                     <option value="16">16x16</option>
-                    <option value="18">18x18</option>
-                    <option value="20">20x20</option>
                 </select>
             </div>
             

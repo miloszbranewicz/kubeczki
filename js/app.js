@@ -1419,44 +1419,57 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         
-        // Add title
-        doc.setFontSize(20);
-        doc.text('Konstrukcja z Kubeczków', 15, 15);
+        // Load and add the logo in the top right corner
+        const logoImg = new Image();
+        logoImg.src = 'images/logo.png';
         
-        // Add date
-        const today = new Date();
-        doc.setFontSize(10);
-        doc.text(`Utworzono: ${today.toLocaleDateString()}`, 15, 22);
-        
-        // Add design image - ensure it fits properly on the page
-        const imgProps = doc.getImageProperties(dataURL);
-        const margin = 15; // margin on all sides
-        
-        // Calculate maximum dimensions that would fit on the page
-        const maxWidth = pageWidth - (margin * 2);
-        const maxHeight = pageHeight - 40; // Allow space for title only
-        
-        // Calculate dimensions while preserving aspect ratio
-        let width, height;
-        
-        if (imgProps.width / imgProps.height > maxWidth / maxHeight) {
-            // Image is wider than it is tall relative to available space
-            width = maxWidth;
-            height = (imgProps.height * width) / imgProps.width;
-        } else {
-            // Image is taller than it is wide relative to available space
-            height = maxHeight;
-            width = (imgProps.width * height) / imgProps.height;
-        }
-        
-        // Center the image horizontally
-        const x = (pageWidth - width) / 2;
-        
-        // Add the image to the PDF
-        doc.addImage(dataURL, 'PNG', x, 30, width, height);
-        
-        // Save the PDF
-        doc.save('konstrukcja-kubeczkow.pdf');
+        logoImg.onload = function() {
+            // Original logo dimensions
+            const originalWidth = 200;
+            const originalHeight = 110;
+            
+            // Calculate logo dimensions to maintain aspect ratio
+            // Use a reasonable size for the logo - adjust as needed
+            const logoWidth = 40; // mm
+            const logoHeight = (originalHeight * logoWidth) / originalWidth;
+            
+            // Position in the top right corner with a margin
+            const logoX = pageWidth - logoWidth - 15; // 15mm from right edge
+            const logoY = 15; // 15mm from top
+            
+            // Add the logo to the PDF
+            doc.addImage(logoImg, 'PNG', logoX, logoY, logoWidth, logoHeight);
+            
+            // Add design image - ensure it fits properly on the page
+            const imgProps = doc.getImageProperties(dataURL);
+            const margin = 15; // margin on all sides
+            
+            // Calculate maximum dimensions that would fit on the page
+            const maxWidth = pageWidth - (margin * 2);
+            const maxHeight = pageHeight - 40; // Allow space for logo
+            
+            // Calculate dimensions while preserving aspect ratio
+            let width, height;
+            
+            if (imgProps.width / imgProps.height > maxWidth / maxHeight) {
+                // Image is wider than it is tall relative to available space
+                width = maxWidth;
+                height = (imgProps.height * width) / imgProps.width;
+            } else {
+                // Image is taller than it is wide relative to available space
+                height = maxHeight;
+                width = (imgProps.width * height) / imgProps.height;
+            }
+            
+            // Center the image horizontally
+            const x = (pageWidth - width) / 2;
+            
+            // Add the image to the PDF (position it below the logo)
+            doc.addImage(dataURL, 'PNG', x, 60, width, height);
+            
+            // Save the PDF
+            doc.save('konstrukcja-kubeczkow.pdf');
+        };
     }
     
     /**
