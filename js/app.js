@@ -1576,6 +1576,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add the image to the PDF (position it below the logo)
             doc.addImage(dataURL, 'PNG', x, 60, width, height);
             
+            // Add website URL to the bottom right corner
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100); // Gray text color
+            const websiteURL = "www.kodowanienadywanie.pl";
+            const textWidth = doc.getStringUnitWidth(websiteURL) * 10 / doc.internal.scaleFactor;
+            const textX = pageWidth - textWidth - 15; // 15mm from right edge
+            const textY = pageHeight - 10; // 10mm from bottom
+            doc.text(websiteURL, textX, textY);
+            
             // Save the PDF
             doc.save('konstrukcja-kubeczkow.pdf');
         };

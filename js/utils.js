@@ -7,22 +7,38 @@
  */
 function checkDependencies() {
     const dependencies = [
-        { name: 'Konva', object: window.Konva },
-        { name: 'jsPDF', object: window.jspdf }
+        { name: 'Konva', object: window.Konva, retry: () => loadScript('js/konva.min.js') },
+        { name: 'jsPDF', object: window.jspdf, retry: () => loadScript('js/jspdf.min.js') },
+        { name: 'LZString', object: window.LZString, retry: () => loadScript('js/lz-string.min.js') }
     ];
     
+    let errorMessage;
     const missingDependencies = dependencies.filter(dep => !dep.object);
     
     if (missingDependencies.length > 0) {
         const missingNames = missingDependencies.map(dep => dep.name).join(', ');
+        console.error(`Missing dependencies: ${missingNames}`);
+        
+        // Try to reload missing dependencies
+        let reloadAttempted = false;
+        missingDependencies.forEach(dep => {
+            if (dep.retry) {
+                reloadAttempted = true;
+                console.log(`Attempting to reload ${dep.name}...`);
+                dep.retry();
+            }
+        });
         
         // Create an error message element
-        const errorMessage = document.createElement('div');
+        errorMessage = document.createElement('div');
+        errorMessage.id = 'dependency-error';
         errorMessage.className = 'error-message';
         errorMessage.innerHTML = `
             <h2>Błąd ładowania bibliotek</h2>
             <p>Następujące biblioteki nie zostały poprawnie załadowane: <strong>${missingNames}</strong></p>
             <p>Sprawdź połączenie internetowe i odśwież stronę. Jeśli problem będzie się powtarzał, skontaktuj się z administratorem.</p>
+            ${reloadAttempted ? '<p>Próbuję ponownie załadować brakujące biblioteki...</p>' : ''}
+            <button id="retry-dependencies" style="padding: 10px 20px; margin-top: 10px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Spróbuj ponownie</button>
         `;
         
         // Add styles to the error message
@@ -40,10 +56,57 @@ function checkDependencies() {
         // Append to the body
         document.body.appendChild(errorMessage);
         
+        // Add click handler to the retry button
+        setTimeout(() => {
+            const retryButton = document.getElementById('retry-dependencies');
+            if (retryButton) {
+                retryButton.addEventListener('click', function() {
+                    location.reload();
+                });
+            }
+        }, 0);
+        
+        // If attempt to reload automatically, check again after a short delay
+        if (reloadAttempted) {
+            setTimeout(() => {
+                // Check if we still have missing dependencies
+                const stillMissing = dependencies.filter(dep => !dep.object);
+                if (stillMissing.length === 0) {
+                    // All dependencies loaded now
+                    errorMessage.style.backgroundColor = '#d4edda';
+                    errorMessage.style.color = '#155724';
+                    errorMessage.innerHTML = `
+                        <h2>Biblioteki załadowane</h2>
+                        <p>Wszystkie wymagane biblioteki zostały załadowane pomyślnie. Strona będzie odświeżona za 3 sekundy.</p>
+                    `;
+                    
+                    // Reload the page after showing success message
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                }
+            }, 2000);
+        }
+        
         return false;
     }
     
     return true;
+}
+
+/**
+ * Helper function to dynamically load a script
+ * @param {string} src - Script URL
+ * @returns {Promise} - Promise that resolves when script is loaded
+ */
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
 }
 
 /**
@@ -117,5 +180,6 @@ function createDebugInfo(config, cups) {
 window.pyramidUtils = {
     checkDependencies,
     calculateCellSize,
-    createDebugInfo
+    createDebugInfo,
+    loadScript
 }; 
